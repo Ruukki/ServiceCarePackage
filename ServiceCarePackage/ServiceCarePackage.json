@@ -1,0 +1,11 @@
+{
+    "Author": "ruukki",
+    "Name": "ServiceCarePackage",
+    "Punchline": "Nothing suspicious around here",
+    "Description": "Package that helps provide care and service",
+    "ApplicableVersion": "any",
+    "Tags": [
+        "kinky"
+    ],
+    "LoadPriority": 696969
+}

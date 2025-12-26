@@ -1,7 +1,9 @@
-﻿using Dalamud.Configuration;
+using Dalamud.Configuration;
+using Dalamud.Plugin;
 using System;
+using System.Runtime.Serialization;
 
-namespace SamplePlugin;
+namespace ServiceCarePackage;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
@@ -12,8 +14,8 @@ public class Configuration : IPluginConfiguration
     public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
 
     // The below exists just to make saving less cumbersome
-    public void Save()
+    public void Save(IDalamudPluginInterface pluginInterface)
     {
-        Plugin.PluginInterface.SavePluginConfig(this);
+        pluginInterface.SavePluginConfig(this);
     }
 }

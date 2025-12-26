@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -6,7 +6,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Lumina.Excel.Sheets;
 
-namespace SamplePlugin.Windows;
+namespace ServiceCarePackage.Windows;
 
 public class MainWindow : Window, IDisposable
 {
@@ -37,7 +37,7 @@ public class MainWindow : Window, IDisposable
 
         if (ImGui.Button("Show Settings"))
         {
-            plugin.ToggleConfigUi();
+            //plugin.ToggleConfigUi();
         }
 
         ImGui.Spacing();
@@ -51,7 +51,7 @@ public class MainWindow : Window, IDisposable
             if (child.Success)
             {
                 ImGui.Text("Have a goat:");
-                var goatImage = Plugin.TextureProvider.GetFromFile(goatImagePath).GetWrapOrDefault();
+                /*var goatImage = Plugin.TextureProvider.GetFromFile(goatImagePath).GetWrapOrDefault();
                 if (goatImage != null)
                 {
                     using (ImRaii.PushIndent(55f))
@@ -62,14 +62,14 @@ public class MainWindow : Window, IDisposable
                 else
                 {
                     ImGui.Text("Image not found.");
-                }
+                }*/
 
                 ImGuiHelpers.ScaledDummy(20.0f);
 
                 // Example for other services that Dalamud provides.
                 // PlayerState provides a wrapper filled with information about the player character.
 
-                var playerState = Plugin.PlayerState;
+                /*var playerState = Plugin.PlayerState;
                 if (!playerState.IsLoaded)
                 {
                     ImGui.Text("Our local player is currently not logged in.");
@@ -80,14 +80,16 @@ public class MainWindow : Window, IDisposable
                 {
                     ImGui.Text("Our current job is currently not valid.");
                     return;
-                }
+                }*
 
                 // If you want to see the Macro representation of this SeString use `.ToMacroString()`
                 // More info about SeStrings: https://dalamud.dev/plugin-development/sestring/
                 ImGui.Text($"Our current job is ({playerState.ClassJob.RowId}) '{playerState.ClassJob.Value.Abbreviation}' with level {playerState.Level}");
+                */
+
 
                 // Example for querying Lumina, getting the name of our current area.
-                var territoryId = Plugin.ClientState.TerritoryType;
+                /*var territoryId = Plugin.ClientState.TerritoryType;
                 if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
                 {
                     ImGui.Text($"We are currently in ({territoryId}) '{territoryRow.PlaceName.Value.Name}'");
@@ -95,7 +97,7 @@ public class MainWindow : Window, IDisposable
                 else
                 {
                     ImGui.Text("Invalid territory.");
-                }
+                }*/
             }
         }
     }

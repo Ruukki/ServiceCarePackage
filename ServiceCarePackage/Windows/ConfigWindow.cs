@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 
-namespace SamplePlugin.Windows;
+namespace ServiceCarePackage.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
@@ -46,14 +46,14 @@ public class ConfigWindow : Window, IDisposable
         {
             configuration.SomePropertyToBeSavedAndWithADefault = configValue;
             // Can save immediately on change if you don't want to provide a "Save and Close" button
-            configuration.Save();
+            //configuration.Save();
         }
 
         var movable = configuration.IsConfigWindowMovable;
         if (ImGui.Checkbox("Movable Config Window", ref movable))
         {
             configuration.IsConfigWindowMovable = movable;
-            configuration.Save();
+            //configuration.Save();
         }
     }
 }
