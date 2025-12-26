@@ -2,11 +2,14 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using Serilog.Core;
+using ServiceCarePackage.Helpers;
 using ServiceCarePackage.Services.Logs;
+using ServiceCarePackage.Translator;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,16 +18,35 @@ using System.Text.RegularExpressions;
 
 namespace ServiceCarePackage.Services.Chat
 {
-    internal class ChatInputManager
+    internal class ChatInputManager : IDisposable
     {
         private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** message, IntPtr a3);
         [Signature(Signatures.ProcessChatInput, DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
         private Hook<ProcessChatInputDelegate> ProcessChatInputHook { get; set; } = null!;
 
         private ILog log;
-        internal ChatInputManager(ILog log)
+        private ITranslator translator;
+        internal ChatInputManager(ILog log, IGameInteropProvider gameInteropProvider, ITranslator translator)
         {
             this.log = log;
+            this.translator = translator;
+            gameInteropProvider.InitializeFromAttributes(this);
+        }
+
+        internal void EnableHooks()
+        {
+            log.Debug("Enabling hook");
+            ProcessChatInputHook.SafeEnable();
+            if (ProcessChatInputHook != null)
+            {
+                log.Debug("IsEnabled: " + ProcessChatInputHook.IsEnabled.ToString());
+            }
+        }
+
+        internal void Dispose()
+        {
+            ProcessChatInputHook.SafeDisable();
+            ProcessChatInputHook.SafeDispose();
         }
 
         private unsafe byte ProcessChatInputDetour(IntPtr uiModule, byte** message, IntPtr a3)
@@ -38,9 +60,9 @@ namespace ServiceCarePackage.Services.Chat
                 // Debug the output (remove later)
                 foreach (var payload in originalSeString.Payloads)
                 {
-                    log.Verbose($"Message Payload [{payload.Type}]: {payload.ToString()}");
+                    log.Debug($"Message Payload [{payload.Type}]: {payload.ToString()}");
                 }
-                log.Verbose($"Message Payload Present");
+                log.Debug($"Message Payload Present");
 
                 if (string.IsNullOrWhiteSpace(messageDecoded))
                     return ProcessChatInputHook.Original(uiModule, message, a3);
@@ -65,7 +87,7 @@ namespace ServiceCarePackage.Services.Chat
                     // Handle Tells, these are special, use advanced Regex to protect name mix-up
                     if (channel is InputChannel.Tell)
                     {
-                        log.Verbose($"[Chat Processor]: Matched Command is a tell command");
+                        log.Debug($"[Chat Processor]: Matched Command is a tell command");
                         // Using /gag command on yourself sends /tell which should be caught by this
                         // Depends on the message to start like :"/tell {targetPlayer} *{playerPayload.PlayerName}"
                         // Since only outgoing tells are affected, {targetPlayer} and {playerPayload.PlayerName} will be the same
@@ -74,15 +96,16 @@ namespace ServiceCarePackage.Services.Chat
                         // If the condition is not matched here, it means we are performing a self-tell (someone is messaging us), so return original.
                         if (!Regex.Match(messageDecoded, selfTellRegex).Value.IsNullOrEmpty())
                         {
-                            log.Verbose("[Chat Processor]: Ignoring Message as it is a self tell garbled message.");
-                            return ProcessChatInputHook.Original(uiModule, message, a3);
+                            log.Debug("[Chat Processor]: Ignoring Message as it is a self tell garbled message.");
+                            //return ProcessChatInputHook.Original(uiModule, message, a3);
                         }
+
 
                         // Match any other outgoing tell to preserve target name
                         var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:\S+\s{1}\S+@\S+|\<r\>)\s?(?=\S|\s|$)";
                         prefix = Regex.Match(messageDecoded, tellRegex).Value;
                     }
-                    log.Verbose($"Matched Command [{prefix}] for [{channel}]");
+                    log.Debug($"Matched Command [{prefix}] for [{channel}]");
 
                     // Finally if we reached this point, update `muffleAllowedForChannel` to reflect the intended channel.
                     //muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)channel);
@@ -91,7 +114,7 @@ namespace ServiceCarePackage.Services.Chat
                 // If it's not allowed, do not garble.
                 if (/*muffleMessage*/true)
                 {
-                    log.Verbose($"Detouring Message: {messageDecoded}");
+                    log.Debug($"Detouring Message: {messageDecoded}");
 
                     // only obtain the text payloads from this message, as nothing else should madder.
                     var textPayloads = originalSeString.Payloads.OfType<TextPayload>().ToList();
@@ -105,13 +128,13 @@ namespace ServiceCarePackage.Services.Chat
                         : prefix + " " + _muffler.ProcessMessage(stringToProcess);*/
 
                     var output = string.IsNullOrEmpty(prefix)
-                        ? "testMsg"
-                        : prefix + " " + "testMSg";
+                        ? translator.Translate(stringToProcess)
+                        : prefix + " " + translator.Translate(stringToProcess);
 
                     if (string.IsNullOrWhiteSpace(output))
                         return 0; // Do not sent message.
 
-                    log.Verbose("Output: " + output);
+                    log.Debug("Output: " + output);
                     var newSeString = new SeStringBuilder().Add(new TextPayload(output)).Build();
 
                     // Verify its a legal width
@@ -135,6 +158,11 @@ namespace ServiceCarePackage.Services.Chat
 
             // return the original message untranslated
             return ProcessChatInputHook.Original(uiModule, message, a3);
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose();
         }
     }
 }

@@ -3,9 +3,11 @@ using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using ServiceCarePackage.Services;
+using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
 using System;
 using System.IO;
@@ -37,6 +39,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState = services.GetRequiredService<IClientState>();
 
         Log.Verbose("Starting plugin");
+        ServiceHandler.EnableHooks();
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {

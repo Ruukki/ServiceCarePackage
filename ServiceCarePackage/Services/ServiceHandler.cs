@@ -1,13 +1,16 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceCarePackage.Config;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
+using System.Collections.Generic;
 
 namespace ServiceCarePackage.Services
 {
     public static class ServiceHandler
     {
+        public static ServiceProvider? Services { get; set; }
         public static ServiceProvider CreateProvider(IDalamudPluginInterface pi)
         {
             // Create a service collection (see Dalamud.cs, if confused about AddDalamud, that is what AddDalamud(pi) pulls from)
@@ -16,6 +19,7 @@ namespace ServiceCarePackage.Services
                 .AddLogger()
                 .AddConfig(pi)
                 //.AddMovement()
+                .AddTranslator()
                 .AddChat();
                 //.AddExtras()
                 //.AddAction()
@@ -23,7 +27,8 @@ namespace ServiceCarePackage.Services
                 //.AddApi()
                 //.AddUi();
             // return the built services provider in the form of a instanced service collection
-            return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+            Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+            return Services;
         }
 
         private static IServiceCollection AddDalamud(this IServiceCollection services, IDalamudPluginInterface pi)
@@ -57,12 +62,41 @@ namespace ServiceCarePackage.Services
                  // this shit is all a bit wild but its nessisary to handle our danger file stuff correctly. Until you learn more about signatures, i dont advise
                  // you to try and replicate this. However, when you do, just know this is how to correctly integrate them into a service collection structure
                  //var sigService = _.GetRequiredService<ISigScanner>();
-                 //var interop = _.GetRequiredService<IGameInteropProvider>();
+                 var interop = _.GetRequiredService<IGameInteropProvider>();
                  //var config = _.GetRequiredService<Configuration>();
-                 var logger = _.GetRequiredService<ILog>();
+                 var logger = _.GetRequiredService<MyLog>();
                  //var clientState = _.GetRequiredService<IClientState>();
                  //var historyService = _.GetRequiredService<HistoryService>();
-                 return new ChatInputManager(logger);
+                 var translator = _.GetRequiredService<Translator.Translator>();
+                 return new ChatInputManager(logger, interop, translator);
              });
+
+        private static IServiceCollection AddTranslator(this IServiceCollection services)
+        {
+            Dictionary<string, string> englishDict = new Dictionary<string, string>()
+            {
+                {"my", "_'s"},
+                {"mine", "_'s"},
+                {"me", "_"},
+                {"I'm", "_ is"},
+                {"Im", "_ is"},
+                {"I'll", "_ will"},
+                {"I'd", "_ would"},
+                {"I've", "_ has"},
+                {"I am", "_ is"},
+                //{"myself", "itself"},
+                {"I", "_"},
+                {"am", "is"}
+            };
+            return services.AddSingleton<Translator.Translator>(_ => { return new Translator.Translator(englishDict, () => FixedConfig.Name); });
+        }
+
+        internal static void EnableHooks()
+        {
+            if (Services != null)
+            {
+                Services.GetRequiredService<ChatInputManager>().EnableHooks();
+            }
+        }
     }
 }
