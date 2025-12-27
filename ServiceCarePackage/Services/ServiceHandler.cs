@@ -2,8 +2,10 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceCarePackage.Config;
+using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
+using ServiceCarePackage.UI;
 using System.Collections.Generic;
 
 namespace ServiceCarePackage.Services
@@ -21,11 +23,7 @@ namespace ServiceCarePackage.Services
                 //.AddMovement()
                 .AddTranslator()
                 .AddChat();
-                //.AddExtras()
-                //.AddAction()
-                //.AddManagers()
-                //.AddApi()
-                //.AddUi();
+                //.AddMovement();
             // return the built services provider in the form of a instanced service collection
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
             return Services;
@@ -69,7 +67,14 @@ namespace ServiceCarePackage.Services
                  //var historyService = _.GetRequiredService<HistoryService>();
                  var translator = _.GetRequiredService<Translator.Translator>();
                  return new ChatInputManager(logger, interop, translator);
-             });
+             })
+            .AddSingleton<ChatUI>(_ => 
+            {
+                var logger = _.GetRequiredService<MyLog>();
+                var framework = _.GetRequiredService<IFramework>();
+                var gameUi = _.GetRequiredService<IGameGui>();
+                return new ChatUI(logger, gameUi, framework);
+            });
 
         private static IServiceCollection AddTranslator(this IServiceCollection services)
         {
@@ -89,6 +94,17 @@ namespace ServiceCarePackage.Services
                 {"am", "is"}
             };
             return services.AddSingleton<Translator.Translator>(_ => { return new Translator.Translator(englishDict, () => FixedConfig.Name); });
+        }
+
+        private static IServiceCollection AddMovement(this IServiceCollection services)
+        {
+            return services.AddSingleton<ControllerEmu>(_ => 
+            { 
+                var pluginLog = _.GetRequiredService<MyLog>();
+                var chatui = _.GetRequiredService<ChatUI>();
+                var framework = (_.GetRequiredService<IFramework>());
+                return new ControllerEmu(framework, chatui, pluginLog); 
+            });
         }
 
         internal static void EnableHooks()

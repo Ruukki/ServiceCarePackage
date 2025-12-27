@@ -6,9 +6,11 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
+using ServiceCarePackage.UI;
 using System;
 using System.IO;
 
@@ -40,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Log.Verbose("Starting plugin");
         ServiceHandler.EnableHooks();
+        //services.GetRequiredService<ControllerEmu>();
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
