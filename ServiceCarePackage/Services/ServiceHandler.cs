@@ -5,7 +5,10 @@ using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
+using ServiceCarePackage.Services.Movement;
+using ServiceCarePackage.Services.Target;
 using ServiceCarePackage.UI;
+using ServiceCarePackage.Windows;
 using System.Collections.Generic;
 
 namespace ServiceCarePackage.Services
@@ -20,10 +23,11 @@ namespace ServiceCarePackage.Services
                 .AddDalamud(pi)
                 .AddLogger()
                 .AddConfig(pi)
-                //.AddMovement()
+                .AddMovement()
                 .AddTranslator()
-                .AddChat();
-                //.AddMovement();
+                .AddChat()
+                .AddTargeting()
+                .AddUi(pi);
             // return the built services provider in the form of a instanced service collection
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
             return Services;
@@ -54,7 +58,12 @@ namespace ServiceCarePackage.Services
 
         private static IServiceCollection AddChat(this IServiceCollection services)
         => services
-             //.AddSingleton<MessageSender>(_ => { var sigService = _.GetRequiredService<ISigScanner>(); var framework = _.GetRequiredService<IFramework>(); return new MessageSender(sigService, framework); })
+             .AddSingleton<MessageSender>(_ => 
+             { 
+                 var sigService = _.GetRequiredService<ISigScanner>(); 
+                 var framework = _.GetRequiredService<IFramework>(); 
+                 return new MessageSender(sigService, framework); 
+             })
              .AddSingleton<ChatInputManager>(_ =>
              {
                  // this shit is all a bit wild but its nessisary to handle our danger file stuff correctly. Until you learn more about signatures, i dont advise
@@ -74,6 +83,17 @@ namespace ServiceCarePackage.Services
                 var framework = _.GetRequiredService<IFramework>();
                 var gameUi = _.GetRequiredService<IGameGui>();
                 return new ChatUI(logger, gameUi, framework);
+            })
+            .AddSingleton<ChatReader>(_ =>
+            {
+                var chatGui = _.GetRequiredService<IChatGui>();
+                var config = _.GetRequiredService<Configuration>();
+                var messageSender = _.GetRequiredService<MessageSender>();
+                var framework = _.GetRequiredService<IFramework>();
+                var log = _.GetRequiredService<MyLog>();
+                var moveManager = _.GetRequiredService<MoveManager>();
+                var playerState = _.GetRequiredService<IPlayerState>();
+                return new ChatReader(chatGui, config, messageSender, framework, log, moveManager, playerState);
             });
 
         private static IServiceCollection AddTranslator(this IServiceCollection services)
@@ -98,12 +118,57 @@ namespace ServiceCarePackage.Services
 
         private static IServiceCollection AddMovement(this IServiceCollection services)
         {
-            return services.AddSingleton<ControllerEmu>(_ => 
+            /*services = services.AddSingleton<ControllerEmu>(_ => 
             { 
                 var pluginLog = _.GetRequiredService<MyLog>();
                 var chatui = _.GetRequiredService<ChatUI>();
                 var framework = (_.GetRequiredService<IFramework>());
                 return new ControllerEmu(framework, chatui, pluginLog); 
+            });*/
+            return services.AddSingleton<MoveMemory>(_ =>
+            {
+                var pluginLog = _.GetRequiredService<MyLog>();
+                var interop = _.GetRequiredService<IGameInteropProvider>();
+                return new MoveMemory(interop, pluginLog);
+            }).AddSingleton<MoveManager>(_ =>
+            {
+                var pluginLog = _.GetRequiredService<MyLog>();
+                var moveMem = _.GetRequiredService<MoveMemory>();
+                var framework = (_.GetRequiredService<IFramework>());
+                var condition = _.GetRequiredService<ICondition>();
+                return new MoveManager(pluginLog, moveMem, framework, condition);
+            });
+        }
+
+        private static IServiceCollection AddUi(this IServiceCollection services, IDalamudPluginInterface pi)
+        {
+            return services.AddSingleton<UiManager>(_ =>
+            {
+                var mainWindow = _.GetRequiredService<MainWindow>();
+                var settingsWindow = _.GetRequiredService<SettingsWindow>();
+                return new UiManager(mainWindow, settingsWindow, pi);
+            }).AddSingleton<SettingsWindow>(_ =>
+            {
+                var log = _.GetRequiredService<MyLog>();
+                var configuration = _.GetRequiredService<Configuration>();
+                var targeting =_.GetRequiredService<TargetingManager>();
+                return new SettingsWindow(log, configuration, targeting);
+            }).AddSingleton<MainWindow>(_ =>
+            {
+                var configuration = _.GetRequiredService<Configuration>();
+                var settings = _.GetRequiredService<SettingsWindow>();
+                return new MainWindow(configuration, settings);
+            });
+        }
+
+        private static IServiceCollection AddTargeting(this IServiceCollection services)
+        {
+            return services.AddSingleton<TargetingManager>(_ =>
+            {
+                var log = _.GetRequiredService<MyLog>();
+                var target = _.GetRequiredService<ITargetManager>();
+                var state = _.GetRequiredService<IClientState>();
+                return new TargetingManager(log, target, state);
             });
         }
 
@@ -112,6 +177,7 @@ namespace ServiceCarePackage.Services
             if (Services != null)
             {
                 Services.GetRequiredService<ChatInputManager>().EnableHooks();
+                Services.GetRequiredService<ChatReader>();
             }
         }
     }

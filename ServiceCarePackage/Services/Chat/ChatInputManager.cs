@@ -74,6 +74,7 @@ namespace ServiceCarePackage.Services.Chat
                 /* -------------------------- MUFFLERCORE / GAGSPEAK CHAT GARBLER TRANSLATION LOGIC -------------------------- */
                 // Firstly, make sure that we are setup to allow garbling in the current channel.
                 var prefix = string.Empty;
+                var tellName = string.Empty;
                 InputChannel channel = 0;
                 //var muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)ChatLogAgent.CurrentChannel());
 
@@ -85,7 +86,7 @@ namespace ServiceCarePackage.Services.Chat
                         return ProcessChatInputHook.Original(uiModule, message, a3);*/
 
                     // Handle Tells, these are special, use advanced Regex to protect name mix-up
-                    if (channel is InputChannel.Tell)
+                    if (channel is InputChannel.Tell_In)
                     {
                         log.Debug($"[Chat Processor]: Matched Command is a tell command");
                         // Using /gag command on yourself sends /tell which should be caught by this
@@ -93,6 +94,7 @@ namespace ServiceCarePackage.Services.Chat
                         // Since only outgoing tells are affected, {targetPlayer} and {playerPayload.PlayerName} will be the same
                         var selfTellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?<name>\S+\s{1}\S+)@\S+\s{1}\*\k<name>(?=\s|$)";
 
+                        //log.Debug($"{Regex.Match(messageDecoded, selfTellRegex).Value}");
                         // If the condition is not matched here, it means we are performing a self-tell (someone is messaging us), so return original.
                         if (!Regex.Match(messageDecoded, selfTellRegex).Value.IsNullOrEmpty())
                         {
@@ -102,10 +104,17 @@ namespace ServiceCarePackage.Services.Chat
 
 
                         // Match any other outgoing tell to preserve target name
-                        var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:\S+\s{1}\S+@\S+|\<r\>)\s?(?=\S|\s|$)";
-                        prefix = Regex.Match(messageDecoded, tellRegex).Value;
+                        var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:(\S+\s{1}\S+)@\S+|\<r\>)\s?(?=\S|\s|$)";
+                        var regexMatch = Regex.Match(messageDecoded, tellRegex);
+                        prefix = regexMatch.Value;
+                        tellName = regexMatch.Groups[1].Value;
                     }
-                    log.Debug($"Matched Command [{prefix}] for [{channel}]");
+                    //log.Debug($"Matched Command [{prefix}] [{tellName}] for [{channel}]");
+                    //Restore swapped alias names
+                    if (tellName.Equals("Miss"))
+                    {
+                        prefix = prefix.Replace("Miss", "Eveli Harukawa");
+                    }
 
                     // Finally if we reached this point, update `muffleAllowedForChannel` to reflect the intended channel.
                     //muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)channel);

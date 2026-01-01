@@ -44,6 +44,8 @@ public class DalamudServices
         services.AddSingleton(Condition);
         services.AddSingleton(NamePlateGui);
         services.AddSingleton(GameGui);
+        services.AddSingleton(PlayerState);
+        services.AddSingleton(TargetManager);
         //services.AddSingleton(GameObject);
         services.AddSingleton(this);
     }
@@ -65,6 +67,8 @@ public class DalamudServices
     [PluginService] public ICondition Condition { get; private set; } = null!;
     [PluginService] public INamePlateGui NamePlateGui { get; private set; } = null!;
     [PluginService] public IGameGui GameGui { get; private set; } = null!;
+    [PluginService] public IPlayerState PlayerState { get; private set; } = null!;
+    [PluginService] public ITargetManager TargetManager { get; private set; } = null!;
     //[PluginService] public IGameObject GameObject { get; private set; } = null!;
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
