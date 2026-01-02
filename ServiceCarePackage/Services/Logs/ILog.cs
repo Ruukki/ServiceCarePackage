@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ServiceCarePackage.Services.Logs
 {
-    internal interface ILog
+    public interface ILog
     {
         void Fatal(string messageTemplate, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string member = "", params object[] values);
 

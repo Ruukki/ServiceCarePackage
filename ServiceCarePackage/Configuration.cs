@@ -14,26 +14,12 @@ public class Configuration : IPluginConfiguration
 
     public bool IsConfigWindowMovable { get; set; } = true;
 
-    #region Features
-    public bool EnableTranslate { get; set; } = true;    
-    public bool EnablePuppetMaster { get; set; } = true;
-    public bool EnablePuppetMasterHadcore { get; set; } = true;
-    public bool EnableForcedWalk { get; set; } = true;
-    #endregion
-
-    // Feature data
-    public string? OwnerName { get; set; }
-    public string? OwnerWorld { get; set; }
-    [JsonIgnore]
-    public string OwnerNameFull { get { return $"{OwnerName}@{OwnerWorld}"; } }
-    public string? OwnerNameAlias { get; set; }
-    public string DisplayName { get; set; } = "Slut";
-    public string CommandName { get; set; } = "slut";
+    
 
     // The below exists just to make saving less cumbersome
     public void Save(IDalamudPluginInterface pluginInterface)
-    {
-        FixedConfig.LoadFromConfig(this);
+    {        
+        this.Version++;
         pluginInterface.SavePluginConfig(this);
     }
 }

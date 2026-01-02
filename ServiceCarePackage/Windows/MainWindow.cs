@@ -40,18 +40,6 @@ internal class MainWindow : Window, IDisposable
 
         ImGui.Spacing();
 
-        bool enableTranslate = configuration.EnableTranslate;
-        if (ImGui.Checkbox("Translate", ref enableTranslate))
-        {
-            configuration.EnableTranslate = enableTranslate;
-        }
-
-        bool enablePuppetMaster = configuration.EnablePuppetMaster;
-        if (ImGui.Checkbox("PuppetMaster", ref enablePuppetMaster))
-        {
-            configuration.EnablePuppetMaster = enablePuppetMaster;
-        }
-
         // Normally a BeginChild() would have to be followed by an unconditional EndChild(),
         // ImRaii takes care of this after the scope ends.
         // This works for all ImGui functions that require specific handling, examples are BeginTable() or Indent().

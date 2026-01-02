@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
+using ServiceCarePackage.Models;
 using ServiceCarePackage.Services.Logs;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace ServiceCarePackage.Services.Target
             this.clientState = client;
         }
 
-        public (string name, string world)? GetTargetedPlayerName()
+        public CharacterKey? GetTargetedPlayerName()
         {
             string name = string.Empty;
             string world = string.Empty;
@@ -34,14 +35,15 @@ namespace ServiceCarePackage.Services.Target
                 return null;
             }
 
-            if (target is IPlayerCharacter pc)
+            if (target is IPlayerCharacter pc && pc.HomeWorld.IsValid)
             {
                 name = pc.Name.TextValue;
                 world = pc.HomeWorld.Value.Name.ToString();
+                log.Debug($"Target was {name}@{world}");
+                return new(name, world);
             }
 
-            log.Debug($"Target was {name}@{world}");
-            return (name, world);
+            return null;
         }
     }
 }

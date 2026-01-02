@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ExtraPayload;
 using ServiceCarePackage.Helpers;
+using ServiceCarePackage.Models;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
 using System;
@@ -76,6 +77,12 @@ namespace ServiceCarePackage.Services.Chat
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
             var originalName = playerState.CharacterName;
 
+            if (sender.Payloads.Count > 1)
+            {
+                var xx = TryGetSenderNameAndWorld(sender);
+                log.Debug($"{xx.Name}@{xx.World}");
+            }
+
             //_log.Debug($"Sender: {sender.TextValue} type: {type}:{Enum.GetName(typeof(XivChatType), type)} message: {message.TextValue}");
             var originalSender = sender;
             if ((int)type <= 107 && sender.TextValue.Equals(originalName))
@@ -90,9 +97,8 @@ namespace ServiceCarePackage.Services.Chat
                 });*/
 
                 var newPayloads = new List<Payload>(RenameAndRecolor(sender.Payloads, new Vector3(1, 0, 0), originalName, FixedConfig.DisplayName));
-                
                 sender.Payloads.Clear();
-                sender.Payloads.AddRange(newPayloads);
+                sender.Payloads.AddRange(newPayloads);                
             }
             //Alias for others
             if ((int)type <= 107 && sender.TextValue.Equals("Eveli Harukawa"))
@@ -429,6 +435,41 @@ namespace ServiceCarePackage.Services.Chat
                     //GagSpeak.Log.Error($"[Chat Manager]: Failed to process Framework UpdateTerritoryChanged!");
                 }
             }
+        }
+
+        private CharacterKey? TryGetSenderNameAndWorld(SeString sender)
+        {
+            if (!sender.Payloads.Any())
+            {
+                return null;
+            }
+            string? name, world;
+
+            world = playerState.HomeWorld.Value.Name.ToString();
+            name = playerState.CharacterName;
+
+            var pp = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault();
+            if (pp == null)
+            {
+                var tp = sender.Payloads.OfType<TextPayload>().FirstOrDefault();
+                if (name != null && name.Equals(tp.Text))
+                {
+                    return new CharacterKey(name, world);
+                }
+                return null;
+            }
+            else
+            {
+                name = pp.PlayerName;
+            }
+
+            // World is a RowRef<World> (may be invalid when same-world is omitted)
+            if (pp.World.IsValid)
+            {
+                world = pp.World.Value.Name.ToString();
+            }
+
+            return new CharacterKey(name, world);
         }
     }
 }

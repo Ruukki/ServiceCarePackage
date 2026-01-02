@@ -1,14 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 
 namespace ServiceCarePackage.Config
 {
     internal static class FixedConfig
     {
-        internal static string DisplayName { get; set; } = "Slut";        
-        internal static string CommandName { get; set; } = DisplayName.ToLowerInvariant();
-        internal static bool PuppetMasterHArdcore { get; set; } = true;
+        internal static CharacterConfiguration CharConfig { get; private set; } = new();
+
+        internal static bool CharConfigLoaded { get; private set; } = false;
+
+        internal static string DisplayName { get { return CharConfig.DisplayName; } }        
+        internal static string CommandName { get { return CharConfig.CommandName; } }
+        internal static bool PuppetMasterHArdcore { get { return CharConfig.EnablePuppetMasterHadcore; } }
 
         //readonly
         internal static string Name { get { return DisplayName.ToLowerInvariant(); } }
@@ -24,13 +29,12 @@ namespace ServiceCarePackage.Config
             }
         }
 
-        public static void LoadFromConfig(Configuration config)
+        public static void LoadFromConfig(CharacterConfiguration config)
         {
             if (config != null)
             {
-                DisplayName = config.DisplayName;
-                CommandName = config.CommandName;
-                PuppetMasterHArdcore = config.EnablePuppetMasterHadcore;
+                CharConfig = config;
+                CharConfigLoaded = true;
             }
         }
     }

@@ -53,7 +53,13 @@ namespace ServiceCarePackage.Services
                 //config.LoadInterface(pi);
                 return services.AddSingleton<Configuration>(config);
             }
-            return services.AddSingleton<Configuration>();
+            return services.AddSingleton<Configuration>()
+                .AddSingleton<ConfigManager>(_ =>
+                {
+                    var log = _.GetRequiredService<MyLog>();
+                    var playerState = _.GetRequiredService<IPlayerState>();
+                    return new ConfigManager(log, pi, playerState);
+                });
         }
 
         private static IServiceCollection AddChat(this IServiceCollection services)
@@ -152,7 +158,8 @@ namespace ServiceCarePackage.Services
                 var log = _.GetRequiredService<MyLog>();
                 var configuration = _.GetRequiredService<Configuration>();
                 var targeting =_.GetRequiredService<TargetingManager>();
-                return new SettingsWindow(log, configuration, targeting);
+                var config = _.GetRequiredService<ConfigManager>();
+                return new SettingsWindow(log, configuration, targeting, config);
             }).AddSingleton<MainWindow>(_ =>
             {
                 var configuration = _.GetRequiredService<Configuration>();
