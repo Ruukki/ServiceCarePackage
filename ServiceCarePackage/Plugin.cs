@@ -10,6 +10,7 @@ using Serilog;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services;
+using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
@@ -100,6 +101,7 @@ public sealed class Plugin : IDalamudPlugin
             //xx.DisableMovingFor(5000);
             /*var zz = services.GetRequiredService<MessageSender>();
             zz.SendMessage("test");*/
+            //services.GetRequiredService<CharacterDataControl>().SetOnlineStatus();
         }
         else if (args.Equals("true")) 
         {

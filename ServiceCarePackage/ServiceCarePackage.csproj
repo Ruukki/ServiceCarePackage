@@ -12,7 +12,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
+    <Content Include="repo.json" />
     <Content Include="ServiceCarePackage.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="release.ps1" />
   </ItemGroup>
 
   <ItemGroup>

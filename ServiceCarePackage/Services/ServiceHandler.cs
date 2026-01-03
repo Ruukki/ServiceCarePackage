@@ -3,6 +3,7 @@ using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
+using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
@@ -23,6 +24,7 @@ namespace ServiceCarePackage.Services
                 .AddDalamud(pi)
                 .AddLogger()
                 .AddConfig(pi)
+                //.AddDataManagement()
                 .AddMovement()
                 .AddTranslator()
                 .AddChat()
@@ -44,6 +46,16 @@ namespace ServiceCarePackage.Services
         {
             return services.AddSingleton<MyLog>(_ => { var pluginLog = _.GetRequiredService<IPluginLog>(); return new MyLog(pluginLog); });
         }
+
+        /*private static IServiceCollection AddDataManagement(this IServiceCollection services)
+        {
+            return services.AddSingleton<CharacterDataControl>(_ => 
+            { 
+                var pluginLog = _.GetRequiredService<MyLog>();
+                var gameObjects = _.GetRequiredService<IObjectTable>();
+                return new CharacterDataControl(pluginLog, gameObjects); 
+            });
+        }*/
 
         private static IServiceCollection AddConfig(this IServiceCollection services, IDalamudPluginInterface pi)
         {
