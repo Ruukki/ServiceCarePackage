@@ -1,27 +1,25 @@
-[
-    {
-        "Contributors": [
-            "CordeliaMist"
-        ],
-        "Author": "ruukki",
-        "Name": "ServiceCarePackage",
-        "Punchline": "Nothing suspicious around here",
-        "Description": "Package that helps provide care and service",
-        "ApplicableVersion": "any",
-        "Tags": [
-            "kinky"
-        ],
-        "InternalName": "BisTranslator",
-        "AssemblyVersion": "20250721.182339",
-        "TestingAssemblyVersion": "20250721.182339",
-        "DalamudApiLevel": 14,
-        "LoadPriority": 696969,
-        "RepoUrl": "https://github.com/Ruukki/ServiceCarePackage",
-        "IsHide": "False",
-        "IsTestingExclusive": "False",
-        "DownloadCount": 420,
-        "LastUpdate": 1618608322,
-        "DownloadLinkInstall": "https://github.com/Ruukki/BisTranslator/releases/download/20250721.182339/bisTranslator.zip",
-        "DownloadLinkUpdate": "https://github.com/Ruukki/BisTranslator/releases/download/20250721.182339/bisTranslator.zip"
-    }
-]
+[{
+    "Contributors":  [
+                         "CordeliaMist"
+                     ],
+    "Author":  "ruukki",
+    "Name":  "ServiceCarePackage",
+    "Punchline":  "Nothing suspicious around here",
+    "Description":  "Package that helps provide care and service",
+    "ApplicableVersion":  "any",
+    "Tags":  [
+                 "kinky"
+             ],
+    "InternalName":  "BisTranslator",
+    "AssemblyVersion":  "20260103.040124",
+    "TestingAssemblyVersion":  "20260103.040124",
+    "DalamudApiLevel":  14,
+    "LoadPriority":  696969,
+    "RepoUrl":  "https://github.com/Ruukki/ServiceCarePackage",
+    "IsHide":  "False",
+    "IsTestingExclusive":  "False",
+    "DownloadCount":  420,
+    "LastUpdate":  1618608322,
+    "DownloadLinkInstall":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260103.040124/ServiceCarePackage.zip",
+    "DownloadLinkUpdate":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260103.040124/ServiceCarePackage.zip"
+}]
