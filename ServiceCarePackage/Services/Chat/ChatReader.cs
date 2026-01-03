@@ -3,6 +3,7 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using Lumina.Text.Payloads;
 using Newtonsoft.Json;
@@ -18,6 +19,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using static FFXIVClientStructs.FFXIV.Client.UI.Misc.CharaView.Delegates;
 using TextPayload = Dalamud.Game.Text.SeStringHandling.Payloads.TextPayload;
 
 namespace ServiceCarePackage.Services.Chat
@@ -76,15 +78,16 @@ namespace ServiceCarePackage.Services.Chat
         {
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
             var originalName = playerState.CharacterName;
+            CharacterKey? senderKey = null;
 
             if (sender.Payloads.Count > 1)
             {
-                var xx = TryGetSenderNameAndWorld(sender);
-                log.Debug($"{xx.Name}@{xx.World}");
+                senderKey = sender.TryGetSenderNameAndWorld(playerState);
             }
 
             //_log.Debug($"Sender: {sender.TextValue} type: {type}:{Enum.GetName(typeof(XivChatType), type)} message: {message.TextValue}");
             var originalSender = sender;
+
             if ((int)type <= 107 && sender.TextValue.Equals(originalName))
             {
                 /*var senderJson = sender.ToJson();
@@ -95,39 +98,33 @@ namespace ServiceCarePackage.Services.Chat
                     TypeNameHandling = TypeNameHandling.Auto,
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
                 });*/
-
-                var newPayloads = new List<Payload>(RenameAndRecolor(sender.Payloads, new Vector3(1, 0, 0), originalName, FixedConfig.DisplayName));
-                sender.Payloads.Clear();
-                sender.Payloads.AddRange(newPayloads);                
-            }
-            //Alias for others
-            if ((int)type <= 107 && sender.TextValue.Equals("Eveli Harukawa"))
-            {
-                /*var senderJson = sender.ToJson();
-                //Fix with config
-                senderJson = senderJson.Replace("Eveli Harukawa", "Miss");
-                var newSender = JsonConvert.DeserializeObject<SeString>(senderJson, new JsonSerializerSettings
+                if (FixedConfig.CharConfig.EnableAliasNameChanger)
                 {
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-                    TypeNameHandling = TypeNameHandling.Auto,
-                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
-                });*/
-
-                var newPayloads = new List<Payload>(RenameAndRecolor(sender.Payloads, ColorHelper.HexToVector3Rgb("#76cd26"), "Eveli Harukawa", "Miss"));
-
-                sender.Payloads.Clear();
-                sender.Payloads.AddRange(newPayloads);
+                    SwapNameToAlias(sender, FixedConfig.CharConfig.AliasColorHex, originalName, FixedConfig.DisplayName);
+                }
             }
 
             // if the message is incoming tell
             if (((int)type < 56 || ((int)type > 71 && (int)type < 108)) && (int)type != 12)
             {
                 //_log.Debug($"Chat_OnCheckMessageHandled {message.TextValue}");
-                var match = Regex.Match(message.TextValue.Trim(), FixedConfig.CommandRegex);
+                var regCommand = string.Empty;
+
+                if (senderKey != null && FixedConfig.PuppetMasterHArdcore
+                    && FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey.ToString()))
+                {
+                    regCommand = FixedConfig.CommandRegexFull;
+                }
+                else
+                {
+                    regCommand = FixedConfig.CommandRegex;
+                }
+                
+                var match = Regex.Match(message.TextValue.Trim(), regCommand);
                 if (match.Success)
                 {
                     var matched = match.Groups[2].Value;
-                    if (true/*config.UseFullMatch*/)
+                    if (FixedConfig.PuppetMasterHArdcore)
                     {
                         matched = matched.Replace('[', '<').Replace(']', '>');
                     }
@@ -177,6 +174,7 @@ namespace ServiceCarePackage.Services.Chat
                     isHandled = true;
                     return;
                 }
+
                 //_log.Debug($"newSender: {sender.TextValue}");
                 //_log.Debug($"ChatManage Type: {type} _config.OwnerName: {_config.OwnerName} {_config.ForcedChat}, Sender: {originalSender.TextValue}");
                 // remove first nonletter symbol, because friendlist bookmark is visible in name
@@ -198,6 +196,18 @@ namespace ServiceCarePackage.Services.Chat
                     }
                 }*/
             }
+
+            // Apply aliases for others
+            if ((int)type <= 107 && senderKey != null)
+            {
+                var alias = FixedConfig.CharConfig.OwnerChars.Where(x => x.Key.Equals(senderKey.ToString()));
+                if (alias.Any())
+                {
+                    var first = alias.First();
+
+                    SwapNameToAlias(sender, first.Value.ColorHex, senderKey.Name, first.Value.Alias);
+                }
+            }
         }
 
         private List<Payload> RenameAndRecolor(List<Payload> payloads, Vector3 color, string originalName, string? nameAlias = null)
@@ -207,20 +217,18 @@ namespace ServiceCarePackage.Services.Chat
 
             foreach (var p in payloads)
             {
-                if ((p is TextPayload tp) && tp.Text != null && tp.Text.Equals(originalName))
+                if (p is PlayerPayload pp && pp.PlayerName == originalName)
                 {
-                    if (nameAlias != null)
-                    {
-                        tp.Text = tp.Text.Replace(originalName, nameAlias);
-                    }
-                    
-                    newPayloads.Add(new ColorPayload(color).AsRaw());
-                    newPayloads.Add(tp);
-                    newPayloads.Add(new ColorEndPayload().AsRaw());
+                    newPayloads.Add(pp);
+                    continue;
                 }
-                else
+                if (p is TextPayload tp && tp.Text != null && tp.Text.Equals(originalName, StringComparison.Ordinal))
                 {
-                    newPayloads.Add(p);
+                    var newName = nameAlias ?? tp.Text;
+                    newPayloads.Add(new ColorPayload(color).AsRaw());
+                    newPayloads.Add(new TextPayload(newName));          // fresh payload
+                    newPayloads.Add(new ColorEndPayload().AsRaw());
+                    continue;
                 }
             }
             return newPayloads;
@@ -437,39 +445,15 @@ namespace ServiceCarePackage.Services.Chat
             }
         }
 
-        private CharacterKey? TryGetSenderNameAndWorld(SeString sender)
+        private void SwapNameToAlias(SeString sender, string? colorHex, string originalName, string? alias = null)
         {
-            if (!sender.Payloads.Any())
-            {
-                return null;
-            }
-            string? name, world;
-
-            world = playerState.HomeWorld.Value.Name.ToString();
-            name = playerState.CharacterName;
-
-            var pp = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault();
-            if (pp == null)
-            {
-                var tp = sender.Payloads.OfType<TextPayload>().FirstOrDefault();
-                if (name != null && name.Equals(tp.Text))
-                {
-                    return new CharacterKey(name, world);
-                }
-                return null;
-            }
-            else
-            {
-                name = pp.PlayerName;
-            }
-
-            // World is a RowRef<World> (may be invalid when same-world is omitted)
-            if (pp.World.IsValid)
-            {
-                world = pp.World.Value.Name.ToString();
-            }
-
-            return new CharacterKey(name, world);
+            if (alias.IsNullOrEmpty()) { alias = null; }
+            if (colorHex.IsNullOrEmpty()) { colorHex = "#FFFFFF"; }
+            var newPayloads = RenameAndRecolor(sender.Payloads, colorHex.HexToVector3Rgb(), originalName, alias);
+            //log.Error(sender.ToJson());
+            sender.Payloads.Clear();
+            sender.Payloads.AddRange(newPayloads);
+            //log.Error(sender.ToJson());
         }
     }
 }

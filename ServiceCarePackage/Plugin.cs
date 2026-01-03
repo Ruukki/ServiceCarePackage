@@ -7,6 +7,7 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services;
 using ServiceCarePackage.Services.Chat;
@@ -60,6 +61,14 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = "Test Debug"
         });
 
+        ClientState = services.GetRequiredService<IClientState>();
+        if (ClientState != null && ClientState.IsLoggedIn)
+        {
+            services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
+        }
+
+        ClientState?.Login += OnLogin;
+
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
         // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
@@ -101,5 +110,22 @@ public sealed class Plugin : IDalamudPlugin
         {
             move.IsWalkingForced = false;
         }
+    }
+
+    private void OnLogin()
+    {
+        if (ClientState != null)
+        {
+            ClientState = services.GetRequiredService<IClientState>();
+        }
+        if (ClientState != null)
+        {
+            services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
+        }
+    }
+
+    private void OnLogout()
+    {
+
     }
 }

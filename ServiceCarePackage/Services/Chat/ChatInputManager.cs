@@ -7,7 +7,9 @@ using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using Serilog.Core;
+using ServiceCarePackage.Config;
 using ServiceCarePackage.Helpers;
+using ServiceCarePackage.Models;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Translator;
 using System;
@@ -26,11 +28,13 @@ namespace ServiceCarePackage.Services.Chat
 
         private ILog log;
         private ITranslator translator;
-        internal ChatInputManager(ILog log, IGameInteropProvider gameInteropProvider, ITranslator translator)
+        private IPlayerState playerState;
+        internal ChatInputManager(ILog log, IGameInteropProvider gameInteropProvider, ITranslator translator, IPlayerState playerState)
         {
             this.log = log;
             this.translator = translator;
             gameInteropProvider.InitializeFromAttributes(this);
+            this.playerState = playerState;
         }
 
         internal void EnableHooks()
@@ -58,11 +62,11 @@ namespace ServiceCarePackage.Services.Chat
                 var messageDecoded = originalSeString.ToString();
 
                 // Debug the output (remove later)
-                foreach (var payload in originalSeString.Payloads)
+                /*foreach (var payload in originalSeString.Payloads)
                 {
                     log.Debug($"Message Payload [{payload.Type}]: {payload.ToString()}");
                 }
-                log.Debug($"Message Payload Present");
+                log.Debug($"Message Payload Present");*/
 
                 if (string.IsNullOrWhiteSpace(messageDecoded))
                     return ProcessChatInputHook.Original(uiModule, message, a3);
@@ -75,6 +79,7 @@ namespace ServiceCarePackage.Services.Chat
                 // Firstly, make sure that we are setup to allow garbling in the current channel.
                 var prefix = string.Empty;
                 var tellName = string.Empty;
+                var tellWorld = string.Empty;
                 InputChannel channel = 0;
                 //var muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)ChatLogAgent.CurrentChannel());
 
@@ -104,16 +109,21 @@ namespace ServiceCarePackage.Services.Chat
 
 
                         // Match any other outgoing tell to preserve target name
-                        var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:(\S+\s{1}\S+)@\S+|\<r\>)\s?(?=\S|\s|$)";
+                        var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:(\S+\s?\S+)@(\S+)|\<r\>)\s?(?=\S|\s|$)";
                         var regexMatch = Regex.Match(messageDecoded, tellRegex);
                         prefix = regexMatch.Value;
                         tellName = regexMatch.Groups[1].Value;
+                        tellWorld += regexMatch.Groups[2].Value;
                     }
                     //log.Debug($"Matched Command [{prefix}] [{tellName}] for [{channel}]");
+
                     //Restore swapped alias names
-                    if (tellName.Equals("Miss"))
+                    var recoveredName = string.Empty;
+                    CharData recoveredData = new();
+
+                    if (TryFindByAliasAndWorld(FixedConfig.CharConfig.OwnerChars, tellName, tellWorld, out recoveredName, out recoveredData))
                     {
-                        prefix = prefix.Replace("Miss", "Eveli Harukawa");
+                        prefix = prefix.Replace($"{tellName}@{tellWorld}", recoveredName);
                     }
 
                     // Finally if we reached this point, update `muffleAllowedForChannel` to reflect the intended channel.
@@ -136,9 +146,19 @@ namespace ServiceCarePackage.Services.Chat
                         ? _muffler.ProcessMessage(stringToProcess)
                         : prefix + " " + _muffler.ProcessMessage(stringToProcess);*/
 
-                    var output = string.IsNullOrEmpty(prefix)
-                        ? translator.Translate(stringToProcess)
-                        : prefix + " " + translator.Translate(stringToProcess);
+                    string? output;
+                    if (FixedConfig.CharConfig.EnableTranslate)
+                    {
+                        output = string.IsNullOrEmpty(prefix)
+                            ? translator.Translate(stringToProcess)
+                            : prefix + " " + translator.Translate(stringToProcess);
+                    }
+                    else
+                    {
+                        output = string.IsNullOrEmpty(prefix)
+                            ? stringToProcess
+                            : prefix + " " + stringToProcess;
+                    }
 
                     if (string.IsNullOrWhiteSpace(output))
                         return 0; // Do not sent message.
@@ -172,6 +192,36 @@ namespace ServiceCarePackage.Services.Chat
         void IDisposable.Dispose()
         {
             Dispose();
+        }
+
+        private bool TryFindByAliasAndWorld(
+            Dictionary<string, CharData> ownerChars,
+            string alias,
+            string world,
+            out string nameAtWorldKey,
+            out CharData data)
+        {
+            foreach (var kv in ownerChars)
+            {
+                if (kv.Value?.Alias == null)
+                    continue;
+
+                // Parse "Name@World" key
+                if (!CharacterKey.TryParse(kv.Key, out var ck))
+                    continue;
+
+                if (ck.World.Equals(world, StringComparison.OrdinalIgnoreCase) &&
+                    kv.Value.Alias.Equals(alias, StringComparison.OrdinalIgnoreCase))
+                {
+                    nameAtWorldKey = kv.Key;
+                    data = kv.Value;
+                    return true;
+                }
+            }
+
+            nameAtWorldKey = "";
+            data = null!;
+            return false;
         }
     }
 }

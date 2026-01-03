@@ -23,6 +23,7 @@ namespace ServiceCarePackage.UI
             windowSystem.AddWindow(Settings);
 
             this.pi.UiBuilder.Draw += Draw;
+            this.pi.UiBuilder.OpenMainUi += ShowMain;
             this.pi.UiBuilder.OpenConfigUi += ShowSettings; // optional: opens config from /xlplugins
         }
 
@@ -33,6 +34,7 @@ namespace ServiceCarePackage.UI
         public void Dispose()
         {
             pi.UiBuilder.Draw -= Draw;
+            pi.UiBuilder.OpenMainUi -= ShowMain;
             pi.UiBuilder.OpenConfigUi -= ShowSettings;
         }
     }

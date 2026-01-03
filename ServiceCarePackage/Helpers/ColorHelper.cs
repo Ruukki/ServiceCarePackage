@@ -6,7 +6,7 @@ namespace ServiceCarePackage.Helpers
 {
     public static class ColorHelper
     {
-        public static Vector3 HexToVector3Rgb(string hex)
+        public static Vector3 HexToVector3Rgb(this string hex)
         {
             hex = hex.TrimStart('#');
 

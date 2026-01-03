@@ -56,7 +56,7 @@ namespace ServiceCarePackage.Translator
                 var len = text.Length;
                 var resolvedValue = value.Replace("_", nameProvider());
                 //should ignore <text>, sidenote still ignores <text for optimisation
-                text = Regex.Replace(text, $@"(?i)(?<=^|\s|\W)(?<=[^<\[]){key}(?=[^>\]])(?=\s|\W|$)", resolvedValue);
+                text = Regex.Replace(text, $@"(?i)(?<![<\[])(?<=^|[\s\W]){key}(?=$|[\s\W])(?![>\]])", resolvedValue);
             }
 
             if (!string.IsNullOrEmpty(prefix))

@@ -74,14 +74,11 @@ namespace ServiceCarePackage.Services
              {
                  // this shit is all a bit wild but its nessisary to handle our danger file stuff correctly. Until you learn more about signatures, i dont advise
                  // you to try and replicate this. However, when you do, just know this is how to correctly integrate them into a service collection structure
-                 //var sigService = _.GetRequiredService<ISigScanner>();
                  var interop = _.GetRequiredService<IGameInteropProvider>();
-                 //var config = _.GetRequiredService<Configuration>();
                  var logger = _.GetRequiredService<MyLog>();
-                 //var clientState = _.GetRequiredService<IClientState>();
-                 //var historyService = _.GetRequiredService<HistoryService>();
                  var translator = _.GetRequiredService<Translator.Translator>();
-                 return new ChatInputManager(logger, interop, translator);
+                 var playerState = _.GetRequiredService<IPlayerState>();
+                 return new ChatInputManager(logger, interop, translator, playerState);
              })
             .AddSingleton<ChatUI>(_ => 
             {

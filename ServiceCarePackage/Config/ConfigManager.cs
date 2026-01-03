@@ -63,17 +63,23 @@ namespace ServiceCarePackage.Config
             try
             {
                 var json = File.ReadAllText(path);
-                Current = JsonSerializer.Deserialize<CharacterConfiguration>(json, jsonOptions) ?? new CharacterConfiguration();
+                Current = JsonSerializer.Deserialize<CharacterConfiguration>(json, jsonOptions) ?? new CharacterConfiguration();                
             }
             catch
             {
                 // If corrupted, fall back to defaults (optionally rename bad file)
                 Current = new CharacterConfiguration();
             }
+
+            FixedConfig.LoadFromConfig(Current);
         }
 
         public void Save()
         {
+            if (CurrentKey == null && playerState != null && playerState.IsLoaded)
+            {
+                CurrentKey = new(playerState.CharacterName, playerState.HomeWorld.Value.Name.ToString());
+            }
             log.Debug($"Saving CharConfig for {CurrentKey?.ToString()}");
             if (CurrentKey is null) return;
 
@@ -82,6 +88,8 @@ namespace ServiceCarePackage.Config
             Current.Version++;
             var json = JsonSerializer.Serialize(Current, jsonOptions);
             File.WriteAllText(path, json);
+
+            FixedConfig.LoadFromConfig(Current);
         }
 
         private string GetPathFor(CharacterKey key)

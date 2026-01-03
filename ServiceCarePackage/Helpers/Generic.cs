@@ -1,6 +1,12 @@
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using ServiceCarePackage.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -143,6 +149,41 @@ namespace ServiceCarePackage.Helpers
         {
             cts?.SafeCancelDispose();
             cts = new CancellationTokenSource();
+        }
+
+        public static CharacterKey? TryGetSenderNameAndWorld(this SeString sender, IPlayerState playerState)
+        {
+            if (!sender.Payloads.Any())
+            {
+                return null;
+            }
+            string? name, world;
+
+            world = playerState.HomeWorld.Value.Name.ToString();
+            name = playerState.CharacterName;
+
+            var pp = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault();
+            if (pp == null)
+            {
+                var tp = sender.Payloads.OfType<TextPayload>().FirstOrDefault();
+                if (name != null && name.Equals(tp.Text))
+                {
+                    return new CharacterKey(name, world);
+                }
+                return null;
+            }
+            else
+            {
+                name = pp.PlayerName;
+            }
+
+            // World is a RowRef<World> (may be invalid when same-world is omitted)
+            if (pp.World.IsValid)
+            {
+                world = pp.World.Value.Name.ToString();
+            }
+
+            return new CharacterKey(name, world);
         }
     }
 }

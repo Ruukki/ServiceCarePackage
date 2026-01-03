@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using ServiceCarePackage.Config;
 using ServiceCarePackage.Services.Logs;
 using System;
 using System.Reflection.Metadata.Ecma335;
@@ -196,7 +197,7 @@ namespace ServiceCarePackage.Services.Movement
                 }
             }
 
-            if (IsWalkingForced)
+            if (FixedConfig.CharConfig.EnableForcedWalk)
             {
                 ForceWalk();
             }

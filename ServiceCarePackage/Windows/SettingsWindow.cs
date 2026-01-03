@@ -25,13 +25,10 @@ internal class SettingsWindow : Window, IDisposable
     private TargetingManager targetingManager { get; }
     private ILog log { get; }
 
-    private string ownerNameBuffer = string.Empty;
-    private string ownerWorldBuffer = string.Empty;
-    private bool loadedFromConfig;
-
     private string addKeyBuffer = "";
     private string addAliasBuffer = "";
     private string filterBuffer = "";
+    private string addColorBuffer = "#FFFFFF";
 
 
     // We give this window a constant ID using ###.
@@ -40,7 +37,7 @@ internal class SettingsWindow : Window, IDisposable
     internal SettingsWindow(ILog log, Configuration configuration, TargetingManager targetingManager, ConfigManager configManager) 
         : base("A Wonderful Configuration Window###With a constant ID")
     {
-        Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
+        Flags = ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize;
 
         //Size = new Vector2(232, 60);
@@ -69,15 +66,10 @@ internal class SettingsWindow : Window, IDisposable
 
     public override void OnOpen()
     {
-        // Load once when window opens
-        ownerNameBuffer = configManager.Current.OwnerName ?? "";
-        ownerWorldBuffer = configManager.Current.OwnerWorld ?? "";
-        loadedFromConfig = true;
     }
 
     public override void OnClose()
     {
-        loadedFromConfig = false;
     }
 
     public override void Draw()
@@ -93,30 +85,22 @@ internal class SettingsWindow : Window, IDisposable
             configManager.Save();
         }
 
+        ImGui.Text($"Loaded configuration for: {configManager.CurrentKey}");
+        ImGui.Text($"Current access level: {configManager.Current.SettingLockLevels}");
+
         if (ImGui.BeginTabBar("Outer"))
         {
             if (ImGui.BeginTabItem("Features"))
             {
+                #region FullLock
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulLock) { ImGui.BeginDisabled(); }
+
                 bool enableTranslate = configManager.Current.EnableTranslate;
                 if (ImGui.Checkbox("Translate", ref enableTranslate))
                 {
                     configManager.Current.EnableTranslate = enableTranslate;
                 }
-
-
-                bool enablePuppetMaster = configManager.Current.EnablePuppetMaster;
-                if (ImGui.Checkbox("PuppetMaster", ref enablePuppetMaster))
-                {
-                    configManager.Current.EnablePuppetMaster = enablePuppetMaster;
-                }
-
-
-                bool enableForcedWalk = configManager.Current.EnableForcedWalk;
-                if (ImGui.Checkbox("Forced walk", ref enableForcedWalk))
-                {
-                    configManager.Current.EnableForcedWalk = enableForcedWalk;
-                }
-
+                Tooltip("Helps you be extra cute and silly by swappign those pest first person pronouns to third person");
 
                 bool enablePuppetMasterHc = configManager.Current.EnablePuppetMasterHadcore;
                 if (ImGui.Checkbox("Hardcore puppet master", ref enablePuppetMasterHc))
@@ -126,6 +110,38 @@ internal class SettingsWindow : Window, IDisposable
                 Tooltip("Enables puppet master mathching for full commands.\n"
                                    + "Allows use of multi word/argument commands (replace '<>' with '[]').\n"
                                    + "name, target [me]");
+
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulLock) { ImGui.EndDisabled(); }
+                #endregion
+
+                #region BasicLock
+                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.BasicLock) { ImGui.BeginDisabled(); }
+
+                bool enablePuppetMaster = configManager.Current.EnablePuppetMaster;
+                if (ImGui.Checkbox("PuppetMaster+", ref enablePuppetMaster))
+                {
+                    configManager.Current.EnablePuppetMaster = enablePuppetMaster;
+                }
+                Tooltip("PuppetMaster but better, forces you to stop and do the commands");
+
+                bool enableForcedWalk = configManager.Current.EnableForcedWalk;
+                if (ImGui.Checkbox("Forced walk", ref enableForcedWalk))
+                {
+                    configManager.Current.EnableForcedWalk = enableForcedWalk;
+                }
+                Tooltip("Goodgirls shouldn't be running anyway in those heels");
+
+                bool enableAliasNameChanger = configManager.Current.EnableAliasNameChanger;
+                if (ImGui.Checkbox("Enable chat alias", ref enableAliasNameChanger))
+                {
+                    configManager.Current.EnableAliasNameChanger = enableAliasNameChanger;
+                }
+                Tooltip("Swaps your boring FF name in chat to your new much mroe fun one (client side only)");
+
+                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.BasicLock) { ImGui.EndDisabled(); }
+                #endregion
+
+
                 ImGui.Spacing();
 
                 ImGui.EndTabItem();
@@ -150,6 +166,14 @@ internal class SettingsWindow : Window, IDisposable
                 Tooltip("Name used for puppetmaster command matching.\n"
                         + "If left empty - lowercase display name will be used");
 
+                var colorBuf = configManager.Current.AliasColorHex ?? "#FFFFFF";
+                //ImGui.SetNextItemWidth();
+                if (ImGui.InputText("Color for chat alias##color", ref colorBuf, 16,
+                    ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsNoBlank))
+                {
+                    configManager.Current.AliasColorHex = NormalizeHex(colorBuf);
+                }
+
                 ImGui.EndTabItem();
             }
 
@@ -164,7 +188,7 @@ internal class SettingsWindow : Window, IDisposable
         }
         
 
-        using (var child = ImRaii.Child("AboutYou", new Vector2(800, 150), true))
+        /*using (var child = ImRaii.Child("AboutYou", new Vector2(800, 150), true))
         {
             // Check if this child is drawing
             if (child.Success)
@@ -172,24 +196,15 @@ internal class SettingsWindow : Window, IDisposable
                 
             }
         }
-        ImGui.Spacing();
-
-        using (var child = ImRaii.Child("AboutOwner", new Vector2(800, 250), true))
-        {
-            // Check if this child is drawing
-            if (child.Success)
-            {
-                
-            }
-        }
+        ImGui.Spacing();*/
 
         //if (configManager.Current.SomePropertyToBeSavedAndWithADefault) { ImGui.BeginDisabled(); }
-        var movable = configuration.IsConfigWindowMovable;
+        /*var movable = configuration.IsConfigWindowMovable;
         if (ImGui.Checkbox("Movable Config Window", ref movable))
         {
             configuration.IsConfigWindowMovable = movable;
             //configManager.Current.Save();
-        }
+        }*/
         //if (configManager.Current.SomePropertyToBeSavedAndWithADefault) { ImGui.EndDisabled(); }
         
     }
@@ -201,6 +216,7 @@ internal class SettingsWindow : Window, IDisposable
 
         // Filter
         ImGui.InputText("Filter", ref filterBuffer, 128);
+        Tooltip("Search for owner char list");
 
         // Add row
         ImGui.InputText("Character (Name@World)", ref addKeyBuffer, 128);
@@ -209,10 +225,28 @@ internal class SettingsWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGui.Button("Add / Update"))
         {
-            if (CharacterKey.TryParse(addKeyBuffer.Trim(), out var key))
+            if (CharacterKey.TryParse(addKeyBuffer.Trim(), out var key) && key is not null)
             {
-                configManager.Current.OwnerChars[key.ToString()] = addAliasBuffer.Trim();
-                //configManager.Save();
+                bool worldExists = configManager.Current.OwnerChars.Keys.Any(k =>
+                    CharacterKey.TryParse(k, out var existing) &&
+                    existing is not null &&
+                    existing.World.Equals(key.World, StringComparison.OrdinalIgnoreCase));
+
+                if (!worldExists)
+                {
+                    configManager.Current.OwnerChars[key.ToString()] = new CharData
+                    {
+                        Alias = addAliasBuffer.Trim(),
+                        ColorHex = NormalizeHex(addColorBuffer)
+                    };
+
+                    // configManager.Save();
+                }
+                else
+                {
+                    // Optional: show feedback
+                    ImGui.OpenPopup("World already exists");
+                }
             }
         }
 
@@ -233,54 +267,57 @@ internal class SettingsWindow : Window, IDisposable
         ImGui.Spacing();
 
         // List
-        if (ImGui.BeginTable("AliasesTable", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY,
-            new System.Numerics.Vector2(0, 250)))
+        if (ImGui.BeginTable("AliasesTable", 4,
+    ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY,
+    new System.Numerics.Vector2(0, 250)))
         {
             ImGui.TableSetupColumn("Character", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Alias", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Color", ImGuiTableColumnFlags.WidthFixed, 110);
             ImGui.TableSetupColumn("##Actions", ImGuiTableColumnFlags.WidthFixed, 80);
             ImGui.TableHeadersRow();
 
-            // Sort keys for stable UI
             foreach (var kv in configManager.Current.OwnerChars.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase).ToList())
             {
                 var charKey = kv.Key;
-                var alias = kv.Value ?? "";
-
-                if (!string.IsNullOrWhiteSpace(filterBuffer))
-                {
-                    var f = filterBuffer.Trim();
-                    if (!charKey.Contains(f, StringComparison.OrdinalIgnoreCase) &&
-                        !alias.Contains(f, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                }
+                var entry = kv.Value ?? new CharData();
 
                 ImGui.TableNextRow();
 
-                // Character column
+                // Character
                 ImGui.TableSetColumnIndex(0);
                 ImGui.TextUnformatted(charKey);
 
-                // Alias column (editable inline)
-                ImGui.TableSetColumnIndex(1);
-                ImGui.PushID(charKey); // stable per row
+                ImGui.PushID(charKey);
 
-                var aliasBuf = alias; // local copy for InputText
+                // Alias editable
+                ImGui.TableSetColumnIndex(1);
+                var aliasBuf = entry.Alias ?? "";
                 if (ImGui.InputText("##alias", ref aliasBuf, 128))
                 {
-                    // Update in config on edit (or switch to "Save" button if you prefer)
-                    configManager.Current.OwnerChars[charKey] = aliasBuf;
+                    entry.Alias = aliasBuf;
                     //configManager.Save();
                 }
 
-                // Actions column
+                // Color editable (hex)
                 ImGui.TableSetColumnIndex(2);
+                var colorBuf = entry.ColorHex ?? "#FFFFFF";
+                ImGui.SetNextItemWidth(-1);
+                if (ImGui.InputText("##color", ref colorBuf, 16,
+                    ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsNoBlank))
+                {
+                    entry.ColorHex = NormalizeHex(colorBuf);
+                    //configManager.Save();
+                }
+
+                // Actions
+                ImGui.TableSetColumnIndex(3);
                 if (ImGui.Button("Delete"))
                 {
                     configManager.Current.OwnerChars.Remove(charKey);
                     //configManager.Save();
                     ImGui.PopID();
-                    break; // dictionary changed; break out this frame
+                    break;
                 }
 
                 ImGui.PopID();
@@ -288,6 +325,28 @@ internal class SettingsWindow : Window, IDisposable
 
             ImGui.EndTable();
         }
+    }
+
+    private static string NormalizeHex(string s)
+    {
+        s = (s ?? "").Trim();
+
+        if (s.Length == 0) return "#FFFFFF";
+        if (s[0] != '#') s = "#" + s;
+
+        // Allow #RGB -> #RRGGBB
+        if (s.Length == 4)
+            s = $"#{s[1]}{s[1]}{s[2]}{s[2]}{s[3]}{s[3]}";
+
+        // Clamp to #RRGGBB or #AARRGGBB
+        if (s.Length > 9) s = s[..9];
+        if (s.Length != 7 && s.Length != 9) return "#FFFFFF";
+
+        // Ensure hex chars
+        for (int i = 1; i < s.Length; i++)
+            if (!Uri.IsHexDigit(s[i])) return "#FFFFFF";
+
+        return s.ToUpperInvariant();
     }
 
     private void Tooltip(string text)

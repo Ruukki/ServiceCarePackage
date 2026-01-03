@@ -21,11 +21,15 @@ namespace ServiceCarePackage.Config
         {
             get
             {
-                if (PuppetMasterHArdcore)
-                {
-                    return $@"(?i)^(?:{Name},)\s+(?:\((.*?)\)|(.+))"; //Full match
-                }
                 return @$"(?i)^(?:{Name},)\s+(?:\((.*?)\)|(\w+))"; //original                
+            }
+        }
+
+        internal static string CommandRegexFull
+        {
+            get
+            {
+                return $@"(?i)^(?:{Name},)\s+(?:\((.*?)\)|(.+))"; //Full match            
             }
         }
 
