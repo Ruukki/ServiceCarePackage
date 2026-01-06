@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace ServiceCarePackage.Services.Movement
 {
-    internal class MoveManager : IDisposable
+    public class MoveManager : IDisposable
     {
         private bool MovingDisabled { get; set; } = false;
-        public bool IsWalkingForced { get; set; }
 
         private MoveMemory _memory { get; set; }
         private ILog log { get; set; }
@@ -26,7 +25,7 @@ namespace ServiceCarePackage.Services.Movement
 
         private volatile bool _pendingEnable;
 
-        internal MoveManager(ILog log, MoveMemory mem, IFramework framework, ICondition condition)
+        public MoveManager(ILog log, MoveMemory mem, IFramework framework, ICondition condition)
         {
             this.log = log;
             _memory = mem;
@@ -66,6 +65,20 @@ namespace ServiceCarePackage.Services.Movement
                 _memory.EnableHooks();
                 _memory.ForceDisableMovement++;
                 MovingDisabled = true;
+            }
+        }
+
+        public MovementStatus ToggleMoving()
+        {
+            if (MovingDisabled)
+            {
+                EnableMoving();
+                return MovementStatus.Enabled;
+            }
+            else
+            {
+                DisableMoving();
+                return MovementStatus.Disabled;
             }
         }
 
@@ -210,5 +223,11 @@ namespace ServiceCarePackage.Services.Movement
             if (MovingDisabled)
                 EnableMoving();
         }
+    }
+
+    public enum MovementStatus
+    {
+        Enabled,
+        Disabled,
     }
 }

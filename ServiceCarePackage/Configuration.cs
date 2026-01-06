@@ -18,8 +18,7 @@ public class Configuration : IPluginConfiguration
 
     // The below exists just to make saving less cumbersome
     public void Save(IDalamudPluginInterface pluginInterface)
-    {        
-        this.Version++;
+    {
         pluginInterface.SavePluginConfig(this);
     }
 }

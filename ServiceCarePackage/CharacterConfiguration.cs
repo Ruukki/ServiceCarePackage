@@ -13,7 +13,7 @@ namespace ServiceCarePackage
     {
         public int Version { get; set; } = 0;
 
-        public SettingLockLevels SettingLockLevels { get; set; } = SettingLockLevels.NoLock;
+        public SettingLockLevels SettingLockLevels { get; set; } = SettingLockLevels.None;
 
         #region Features
         public bool EnableTranslate { get; set; } = true;
@@ -28,6 +28,9 @@ namespace ServiceCarePackage
         public string DisplayName { get; set; } = "Slut";
         public string CommandName { get; set; } = "slut";
         public string AliasColorHex { get; set; } = "#FFFFFF";
+        public bool AllowAnyoneUsePuppetMaster { get; set; } = true;
+        public bool AllowSayChatForPuppetMaster { get; set; } = true;
+        public int StunDuration { get; set; } = 5000;
         #endregion
     }
 }

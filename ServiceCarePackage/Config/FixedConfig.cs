@@ -1,6 +1,8 @@
+using Dalamud.Game.Text;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text;
 
 namespace ServiceCarePackage.Config
@@ -13,25 +15,34 @@ namespace ServiceCarePackage.Config
 
         internal static string DisplayName { get { return CharConfig.DisplayName; } }        
         internal static string CommandName { get { return CharConfig.CommandName; } }
-        internal static bool PuppetMasterHArdcore { get { return CharConfig.EnablePuppetMasterHadcore; } }
+
+        //runtime features
+        internal static bool IsActive_ChatHider { get; set; } = false;
 
         //readonly
-        internal static string Name { get { return DisplayName.ToLowerInvariant(); } }
-        internal static string CommandRegex
+        internal static XivChatType[] BaseChatTypes
         {
             get
             {
-                return @$"(?i)^(?:{Name},)\s+(?:\((.*?)\)|(\w+))"; //original                
+                return Enum.GetValues<XivChatType>().Where(x =>
+                {
+                    int xInt = Convert.ToInt32(x);
+                    return (xInt < 56 || (xInt > 71 && xInt < 108)) && xInt != 12;
+                }).ToArray();
             }
+        }
+        internal static string Name { get { return DisplayName.ToLowerInvariant(); } }
+
+        internal static string CommandRegexBase(string commandName)
+        {
+                return @$"(?i)^(?:{CommandName},)\s(?:({commandName})$)"; //original 
         }
 
-        internal static string CommandRegexFull
-        {
-            get
-            {
-                return $@"(?i)^(?:{Name},)\s+(?:\((.*?)\)|(.+))"; //Full match            
-            }
-        }
+        internal static string CommandRegexLock { get { return @$"(?i)^(?:{CommandName},)\s(?:(lock)\s((?:none)|(?:basic)|(?:full))$)"; } }
+
+        internal static string CommandRegex { get { return @$"(?i)^(?:{CommandName},)\s(?:(\w+)$)"; } }
+
+        internal static string CommandRegexFull { get { return $@"(?i)^(?:{CommandName},)\s+(?:\((.+)\))"; } }
 
         public static void LoadFromConfig(CharacterConfiguration config)
         {

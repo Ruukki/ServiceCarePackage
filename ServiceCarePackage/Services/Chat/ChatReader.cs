@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.JobGauge.Enums;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
@@ -7,6 +8,7 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using Lumina.Text.Payloads;
 using Newtonsoft.Json;
+using ServiceCarePackage.Commands;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ExtraPayload;
 using ServiceCarePackage.Helpers;
@@ -19,6 +21,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using static FFXIVClientStructs.FFXIV.Client.UI.Misc.CharaView.Delegates;
 using TextPayload = Dalamud.Game.Text.SeStringHandling.Payloads.TextPayload;
 
@@ -33,11 +37,12 @@ namespace ServiceCarePackage.Services.Chat
         private readonly MoveManager moveManager;
         private readonly IFramework framework;
         private readonly IPlayerState playerState;
+        private readonly CommandsHandler commandsHandler;
 
         private Queue<string> messageQueue = new Queue<string>();
         private Stopwatch messageTimer = new Stopwatch();
         public ChatReader(IChatGui clientChat, Configuration config,
-    MessageSender messageSender, IFramework framework, ILog log, MoveManager moveManager, IPlayerState playerState)
+    MessageSender messageSender, IFramework framework, ILog log, MoveManager moveManager, IPlayerState playerState, CommandsHandler commandsHandler)
         {
             this.clientChat = clientChat;
             this.config = config;
@@ -46,13 +51,14 @@ namespace ServiceCarePackage.Services.Chat
             this.log = log;
             this.moveManager = moveManager;
             this.playerState = playerState;
+            this.commandsHandler = commandsHandler;
 
             // begin our framework check
             this.framework.Update += framework_Update;
             // Begin our OnChatMessage Detection
             this.clientChat.CheckMessageHandled += Chat_OnCheckMessageHandled;
             //_clientChat.ChatMessage += Chat_OnChatMessage;
-            this.clientChat.ChatMessageHandled += Chat_OnChatMessageHandled;
+            this.clientChat.ChatMessageHandled += Chat_OnChatMessageHandled;            
             //_clientChat.ChatMessageUnhandled += Chat_OnChatMessageUnhandled;
         }
 
@@ -77,8 +83,10 @@ namespace ServiceCarePackage.Services.Chat
         private void Chat_OnCheckMessageHandled(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
         {
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
-            var originalName = playerState.CharacterName;
+            var localPlayerName = playerState.CharacterName;
             CharacterKey? senderKey = null;
+            var selfMessage = sender.TextValue.Equals(localPlayerName);
+            var isSenderOwner = FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey?.ToString()??"");
 
             if (sender.Payloads.Count > 1)
             {
@@ -88,30 +96,52 @@ namespace ServiceCarePackage.Services.Chat
             //_log.Debug($"Sender: {sender.TextValue} type: {type}:{Enum.GetName(typeof(XivChatType), type)} message: {message.TextValue}");
             var originalSender = sender;
 
-            if ((int)type <= 107 && sender.TextValue.Equals(originalName))
+            if ((int)type <= 107 && selfMessage)
             {
-                /*var senderJson = sender.ToJson();
-                senderJson = senderJson.Replace(originalName, FixedConfig.DisplayName);
-                var newSender = JsonConvert.DeserializeObject<SeString>(senderJson, new JsonSerializerSettings
-                {
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-                    TypeNameHandling = TypeNameHandling.Auto,
-                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
-                });*/
                 if (FixedConfig.CharConfig.EnableAliasNameChanger)
                 {
-                    SwapNameToAlias(sender, FixedConfig.CharConfig.AliasColorHex, originalName, FixedConfig.DisplayName);
+                    SwapNameToAlias(sender, FixedConfig.CharConfig.AliasColorHex, localPlayerName, FixedConfig.DisplayName);
                 }
             }
 
-            // if the message is incoming tell
-            if (((int)type < 56 || ((int)type > 71 && (int)type < 108)) && (int)type != 12)
+            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message);
+            var runner = Task.Run(() => commandsHandler.TryDispatchAsync(ctx));
+            runner.Wait();
+            if (runner.Result)
             {
-                //_log.Debug($"Chat_OnCheckMessageHandled {message.TextValue}");
+                isHandled = true;
+                return;
+            }
+
+            //Chat hider
+            //log.Debug($"{FixedConfig.IsActive_ChatHider} {message.Payloads.Count == 1} {message.TextValue.Contains(FixedConfig.CommandName)} {message.Payloads[0] is TextPayload}");
+            if (FixedConfig.IsActive_ChatHider
+                && !(type == XivChatType.TellIncoming || type == XivChatType.TellIncoming)
+                && message.Payloads.Count == 1
+                && !message.TextValue.Contains(FixedConfig.CommandName)
+                && message.Payloads[0] is TextPayload tp)
+            {
+                if (tp.Text != null)
+                {
+                    char[] replacements = { '–', '┓', '┗', '┐', '└', '┏', '┛', '┘', '┌', '├', '┝', '┥', '┤', '┣', '┠', '┨', '┫', '┰', '┯', '┬', '┳', '┴', '┷', '┼', '┻', '┸', '┿', '╂', '╂', '┿', '╋'};
+                    var rng = new Random();
+                    char[] buffer = new char[tp.Text.Length];
+                    for (int i = 0; i < tp.Text.Length; i++)
+                    {
+                        char c = tp.Text[i];
+                        buffer[i] = char.IsWhiteSpace(c) ? c : replacements[rng.Next(replacements.Length)];
+                    }
+
+                    tp.Text = new string(buffer);
+                }
+                
+            }
+
+            /*if (!selfMessage && ((int)type < 56 || ((int)type > 71 && (int)type < 108)) && (int)type != 12)
+            {
                 var regCommand = string.Empty;
 
-                if (senderKey != null && FixedConfig.PuppetMasterHArdcore
-                    && FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey.ToString()))
+                if (senderKey != null && FixedConfig.PuppetMasterHArdcore && isSenderOwner)
                 {
                     regCommand = FixedConfig.CommandRegexFull;
                 }
@@ -119,7 +149,7 @@ namespace ServiceCarePackage.Services.Chat
                 {
                     regCommand = FixedConfig.CommandRegex;
                 }
-                
+
                 var match = Regex.Match(message.TextValue.Trim(), regCommand);
                 if (match.Success)
                 {
@@ -129,73 +159,21 @@ namespace ServiceCarePackage.Services.Chat
                         matched = matched.Replace('[', '<').Replace(']', '>');
                     }
                     log.Debug($"match.Success {matched}");
-                    clientChat.Print(new SeStringBuilder().AddItalicsOn().AddUiForeground(31).AddText($"{sender.TextValue}").AddUiForegroundOff()
+                    clientChat.Print(new SeStringBuilder().AddItalicsOn().AddUiForeground(31).AddText($"[{sender.TextValue}]").AddUiForegroundOff()
                         .AddText($" forced you to {matched}.")
                         .AddItalicsOff().BuiltString);
 
-                    messageSender.SendMessage($"/{matched}");
-                    moveManager.DisableMovingFor(5000);
-
-                    /*switch (matched)
+                    Task.Run(() =>
                     {
-                        case "stay":
-                            if (config.tester) moveManager.DisableMoving();
-                            break;
-                        case "move":
-                            if (config.tester) moveManager.EnableMoving();
-                            break;
-                        case "shutup":
-                            if (config.tester) config.chatMuted = true;
-                            break;
-                        case "speak":
-                            if (config.tester) config.chatMuted = false;
-                            break;
-                        default:
-                            moveManager.DisableMoving();
+                        moveManager.DisableMovingFor(5100);
+                        Thread.Sleep(100);
+                        messageSender.SendMessage($"/{matched}");
+                    });
 
-                            Task.Run(() =>
-                            {
-                                Thread.Sleep(100);
-                                if (config.SuperSecretFeature)
-                                {
-                                    _plugService?.Vibrate(5, 0.1);
-                                }
-                                //_messageSender.SendMessage($"/{matched}");
-                                messageSender.SendMessage($"/{matched}");
-
-                                Thread.Sleep(5000);
-                                moveManager.EnableMoving();
-                                log.Debug($"ChatManager enableMovement");
-                            });
-                            break;
-                    }*/
-
-                    // if it does, hide it from the chat log
                     isHandled = true;
                     return;
                 }
-
-                //_log.Debug($"newSender: {sender.TextValue}");
-                //_log.Debug($"ChatManage Type: {type} _config.OwnerName: {_config.OwnerName} {_config.ForcedChat}, Sender: {originalSender.TextValue}");
-                // remove first nonletter symbol, because friendlist bookmark is visible in name
-                /*if (config.ForcedChat && Regex.Replace(originalSender.TextValue, @"^[^a-zA-Z]?(?=[a-zA-Z])", "").StartsWith(config.OwnerName))
-                {
-                    var matchSay = Regex.Match(message.TextValue, config.CommandSayRegex);
-                    if (matchSay.Success)
-                    {
-                        var matched = matchSay.Groups[2].Value;
-                        matched = matched.Replace('[', '<').Replace(']', '>');
-                        log.Debug($"match.Success {matched}");
-
-                        messageSender.SendMessage($"{matched}");
-                        clientChat.Print(new SeStringBuilder().AddItalicsOn().AddUiForeground(31).AddText($"{sender.TextValue}").AddUiForegroundOff()
-                            .AddText($" forced you to say \"{matched}\".")
-                            .AddItalicsOff().BuiltString);
-                        isHandled = true;
-                        return;
-                    }
-                }*/
-            }
+            }*/
 
             // Apply aliases for others
             if ((int)type <= 107 && senderKey != null)

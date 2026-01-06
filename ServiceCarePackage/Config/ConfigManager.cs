@@ -1,12 +1,8 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Common.Lua;
 using ServiceCarePackage.Models;
 using ServiceCarePackage.Services.Logs;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -85,7 +81,6 @@ namespace ServiceCarePackage.Config
 
             Directory.CreateDirectory(BaseDir);
             var path = GetPathFor(CurrentKey);
-            Current.Version++;
             var json = JsonSerializer.Serialize(Current, jsonOptions);
             File.WriteAllText(path, json);
 

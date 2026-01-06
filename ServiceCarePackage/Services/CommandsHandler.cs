@@ -1,0 +1,42 @@
+using ServiceCarePackage.Commands;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ServiceCarePackage.Services
+{
+    public class CommandsHandler
+    {
+        private readonly IChatCommandHandler[] handlers;
+
+        public CommandsHandler(IEnumerable<IChatCommandHandler> handlers)
+        {
+            if (handlers is null) throw new ArgumentNullException(nameof(handlers));
+            this.handlers = [.. handlers.OrderByDescending(h => h.Priority)];
+        }
+
+        public async Task<bool> TryDispatchAsync(ChatCommandContext ctx, CancellationToken ct = default)
+        {
+            if (ctx is null) throw new ArgumentNullException(nameof(ctx));
+
+            foreach (IChatCommandHandler handler in handlers)
+            {
+                Match match = handler.Pattern.Match(ctx.message.TextValue);
+                if (!match.Success) continue;
+
+                if (!handler.CanExecute(ctx, match))
+                    return true; // "handled" in the sense that the text was a command, but disallowed
+
+                await handler.HandleAsync(ctx, match, ct).ConfigureAwait(false);
+                return true;
+            }
+
+            return false;
+        }
+    }
+}

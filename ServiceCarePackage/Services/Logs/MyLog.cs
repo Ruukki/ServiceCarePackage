@@ -1,18 +1,16 @@
 using Dalamud.Plugin.Services;
 using Serilog.Events;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace ServiceCarePackage.Services.Logs
 {
-    internal class MyLog : ILog
+    public class MyLog : ILog
     {
         private IPluginLog pluginLog;
 
-        internal MyLog(IPluginLog pluginLog)
+        public MyLog(IPluginLog pluginLog)
         {
             this.pluginLog = pluginLog;
         }

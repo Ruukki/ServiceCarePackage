@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ServiceCarePackage.Services.Chat
 {
-    internal class MessageSender
+    public class MessageSender
     {
         // Next we need to process the chatbox delgate, meaning we need to get the pointer for the uimodule, message, unused information and byte data
         private delegate void ProcessChatBoxDelegate(IntPtr uiModule, IntPtr message, IntPtr unused, byte a4);
@@ -18,7 +18,7 @@ namespace ServiceCarePackage.Services.Chat
         private IFramework _framework { get; }
 
         /// <summary> By being an internal constructor, it means that this class can only be accessed by the same assembly. </summary>
-        internal MessageSender(ISigScanner scanner, IFramework framework)
+        public MessageSender(ISigScanner scanner, IFramework framework)
         {
             // Now we need to scan for the signature of the chatbox, to see if it is valid
             if (scanner.TryScanText(Signatures.ProcessChatBoxEntry, out var processChatBoxPtr))

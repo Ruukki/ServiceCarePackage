@@ -93,7 +93,11 @@ internal class SettingsWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Features"))
             {
                 #region FullLock
-                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulLock) { ImGui.BeginDisabled(); }
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulL) { ImGui.BeginDisabled(); }
+                ImGui.BeginGroup();
+
+                ImGui.TextDisabled("Full lock group");
+                ImGui.Spacing();
 
                 bool enableTranslate = configManager.Current.EnableTranslate;
                 if (ImGui.Checkbox("Translate", ref enableTranslate))
@@ -111,11 +115,26 @@ internal class SettingsWindow : Window, IDisposable
                                    + "Allows use of multi word/argument commands (replace '<>' with '[]').\n"
                                    + "name, target [me]");
 
-                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulLock) { ImGui.EndDisabled(); }
+                bool allowAnyoneUsePuppetMaster = configManager.Current.AllowAnyoneUsePuppetMaster;
+                if (ImGui.Checkbox("Allow anyone use basic puppetmaster commands", ref allowAnyoneUsePuppetMaster))
+                {
+                    configManager.Current.AllowAnyoneUsePuppetMaster = allowAnyoneUsePuppetMaster;
+                }
+                Tooltip("Allows anyone to use basic puppetmaster commands.\n"
+                                   + "If disabled only allows owner characters to use them.");
+
+                ImGui.EndGroup();
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulL) { ImGui.EndDisabled(); }
                 #endregion
 
+                ImGui.SameLine();
+
                 #region BasicLock
-                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.BasicLock) { ImGui.BeginDisabled(); }
+                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.Basic) { ImGui.BeginDisabled(); }
+                ImGui.BeginGroup();
+
+                ImGui.TextDisabled("Basic lock group");
+                ImGui.Spacing();
 
                 bool enablePuppetMaster = configManager.Current.EnablePuppetMaster;
                 if (ImGui.Checkbox("PuppetMaster+", ref enablePuppetMaster))
@@ -136,9 +155,27 @@ internal class SettingsWindow : Window, IDisposable
                 {
                     configManager.Current.EnableAliasNameChanger = enableAliasNameChanger;
                 }
-                Tooltip("Swaps your boring FF name in chat to your new much mroe fun one (client side only)");
+                Tooltip("Swaps your boring FF name in chat to your new much more fun one (client side only)");
 
-                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.BasicLock) { ImGui.EndDisabled(); }
+                bool allowSayChatForPuppetMaster = configManager.Current.AllowSayChatForPuppetMaster;
+                if (ImGui.Checkbox("Allow say chat for PuppetMaser", ref allowSayChatForPuppetMaster))
+                {
+                    configManager.Current.AllowSayChatForPuppetMaster = allowSayChatForPuppetMaster;
+                }
+                Tooltip("Allows puppetmaster to use say chat for commands.");
+
+                int stunDuration = configManager.Current.StunDuration;
+                ImGui.SetNextItemWidth(200);
+                ImGui.InputInt("Stun duration", ref stunDuration);
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                {
+                    var clamped = Math.Clamp(stunDuration, 5000, int.MaxValue); // pick your real bounds
+                    configManager.Current.StunDuration = clamped;
+                }             
+                Tooltip("Duration for stun in miliseconds.");
+
+                ImGui.EndGroup();
+                if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.Basic) { ImGui.EndDisabled(); }
                 #endregion
 
 
@@ -166,13 +203,13 @@ internal class SettingsWindow : Window, IDisposable
                 Tooltip("Name used for puppetmaster command matching.\n"
                         + "If left empty - lowercase display name will be used");
 
-                var colorBuf = configManager.Current.AliasColorHex ?? "#FFFFFF";
-                //ImGui.SetNextItemWidth();
+
+                var colorBuf = configManager.Current.AliasColorHex ?? "#FFFFFF";                
                 if (ImGui.InputText("Color for chat alias##color", ref colorBuf, 16,
                     ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsNoBlank))
                 {
                     configManager.Current.AliasColorHex = NormalizeHex(colorBuf);
-                }
+                }                
 
                 ImGui.EndTabItem();
             }

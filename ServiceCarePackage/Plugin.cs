@@ -5,6 +5,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
+using Lumina.Excel.Sheets;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using ServiceCarePackage.Config;
@@ -45,7 +46,7 @@ public sealed class Plugin : IDalamudPlugin
 
         services = ServiceHandler.CreateProvider(pluginInterface);
 
-        log = services.GetRequiredService<MyLog>();
+        log = services.GetRequiredService<ILog>();
         ClientState = services.GetRequiredService<IClientState>();
 
         log.Verbose("Starting plugin");
@@ -102,15 +103,12 @@ public sealed class Plugin : IDalamudPlugin
             /*var zz = services.GetRequiredService<MessageSender>();
             zz.SendMessage("test");*/
             //services.GetRequiredService<CharacterDataControl>().SetOnlineStatus();
-        }
-        else if (args.Equals("true")) 
-        {
-            //log.Debug($"{}");
-            move.IsWalkingForced = true;
-        }
-        else if (args.Equals("false"))
-        {
-            move.IsWalkingForced = false;
+            //var data = services.GetRequiredService<IDataManager>();
+            //var emotes = data.GetExcelSheet<Emote>();
+            //foreach (var emote in emotes)
+            //{
+            //    log.Debug($"{emote.Name.ToString()} {emote.ActionTimeline}");
+            //}
         }
     }
 

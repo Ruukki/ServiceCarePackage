@@ -7,8 +7,8 @@ namespace ServiceCarePackage.Enums
 {
     public enum SettingLockLevels : int
     {
-        NoLock = 0,
-        BasicLock = 1,
-        FulLock = 2,
+        None = 0,
+        Basic = 1,
+        FulL = 2,
     }
 }
