@@ -52,7 +52,7 @@ public sealed class Plugin : IDalamudPlugin
         log.Verbose("Starting plugin");
         ServiceHandler.EnableHooks();
         ui = services.GetRequiredService<UiManager>();
-        //services.GetRequiredService<ControllerEmu>();        
+        //services.GetRequiredService<ControllerEmu>();
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {

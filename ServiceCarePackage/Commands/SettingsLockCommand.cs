@@ -20,14 +20,29 @@ namespace ServiceCarePackage.Commands
         private readonly IChatGui chatGui;
         private readonly ILog log;
 
+        private string? lastRegex;
+        private Regex? cachedRegex;
+
         public SettingsLockCommand(ConfigManager configManager, IChatGui chatGui, ILog log)
         {
             this.configManager = configManager;
             this.chatGui = chatGui;
             this.log = log;
         }
-        public Regex Pattern { get; } =
-            new(FixedConfig.CommandRegexLock, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        public Regex Pattern
+        {
+            get
+            {
+                var current = FixedConfig.CommandRegexLock ?? string.Empty;
+                if (!string.Equals(lastRegex, current, StringComparison.Ordinal))
+                {
+                    lastRegex = current;
+                    cachedRegex = new Regex(current,
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                }
+                return cachedRegex!;
+            }
+        }
 
         public int Priority => 1;
 

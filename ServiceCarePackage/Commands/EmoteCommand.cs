@@ -19,6 +19,9 @@ namespace ServiceCarePackage.Commands
         private readonly IChatGui chatGui;
         private readonly ILog log;
 
+        private string? lastRegex;
+        private Regex? cachedRegex;
+
         public EmoteCommand(MessageSender messageSender, MoveManager moveManager, IChatGui chatGui, ILog log)
         {
             this.messageSender = messageSender;
@@ -26,16 +29,34 @@ namespace ServiceCarePackage.Commands
             this.chatGui = chatGui;
             this.log = log;
         }
-        public Regex Pattern { get; } =
-            new(FixedConfig.CommandRegex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        public Regex Pattern
+        {
+            get
+            {
+                var current = FixedConfig.CommandRegex ?? string.Empty;
+                if (!string.Equals(lastRegex, current, StringComparison.Ordinal))
+                {
+                    lastRegex = current;
+                    cachedRegex = new Regex(current,
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                }
+                return cachedRegex!;
+            }
+        }
 
         public int Priority => 0;
 
         public bool CanExecute(ChatCommandContext ctx, Match match)
-            => CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster ? Array.Empty<XivChatType>() : new[] { XivChatType.Say });
+        {
+            var restult = CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster 
+                ? Array.Empty<XivChatType>() : new[] { XivChatType.Say });
+            log.Debug(restult.ToString());
+            return restult;
+        }
 
         public async Task HandleAsync(ChatCommandContext ctx, Match match, CancellationToken ct)
         {
+            //Pattern = new(FixedConfig.CommandRegex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             log.Debug(FixedConfig.CommandRegex);
             var matched = match.Groups[1].Value;
             log.Debug($"match.Success {matched}");

@@ -19,14 +19,29 @@ namespace ServiceCarePackage.Commands
         private readonly IChatGui chatGui;
         private readonly ILog log;
 
+        private string? lastRegex;
+        private Regex? cachedRegex;
+
         public MoveBlockCommand(MoveManager moveManager, IChatGui chatGui, ILog log)
         {
             this.moveManager = moveManager;
             this.chatGui = chatGui;
             this.log = log;
         }
-        public Regex Pattern { get; } =
-            new(FixedConfig.CommandRegexBase("dont move"), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        public Regex Pattern
+        {
+            get
+            {
+                var current = FixedConfig.CommandRegexBase("dont move") ?? string.Empty;
+                if (!string.Equals(lastRegex, current, StringComparison.Ordinal))
+                {
+                    lastRegex = current;
+                    cachedRegex = new Regex(current,
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                }
+                return cachedRegex!;
+            }
+        }
 
         public int Priority => 99;
 

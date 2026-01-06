@@ -114,7 +114,7 @@ namespace ServiceCarePackage.Services
                 var playerState = _.GetRequiredService<IPlayerState>();
                 var cmdManager = _.GetRequiredService<CommandsHandler>();
                 return new ChatReader(chatGui, config, messageSender, framework, log, moveManager, playerState, cmdManager);
-            });
+            }).AddSingleton<CommandsHandler>();
 
         private static IServiceCollection AddCommands(this IServiceCollection services)
         {
@@ -123,8 +123,7 @@ namespace ServiceCarePackage.Services
             services.AddSingleton<IChatCommandHandler, ChatHidetCommand>();
             services.AddSingleton<IChatCommandHandler, SettingsLockCommand>();
             services.AddSingleton<IChatCommandHandler, MoveBlockCommand>();
-            services.AddSingleton<CommandsHandler>();
-
+            
             return services;
             //return services.AddSingleton<CommandsHandler>(_ => new CommandsHandler(_.GetServices<IChatCommandHandler>()));
         }
