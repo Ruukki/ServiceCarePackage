@@ -50,7 +50,6 @@ namespace ServiceCarePackage.Commands
         {
             var restult = CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster 
                 ? Array.Empty<XivChatType>() : new[] { XivChatType.Say });
-            log.Debug(restult.ToString());
             return restult;
         }
 

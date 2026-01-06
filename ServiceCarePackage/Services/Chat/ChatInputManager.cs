@@ -93,7 +93,7 @@ namespace ServiceCarePackage.Services.Chat
                     // Handle Tells, these are special, use advanced Regex to protect name mix-up
                     if (channel is InputChannel.Tell_In)
                     {
-                        log.Debug($"[Chat Processor]: Matched Command is a tell command");
+                        //log.Debug($"[Chat Processor]: Matched Command is a tell command");
                         // Using /gag command on yourself sends /tell which should be caught by this
                         // Depends on the message to start like :"/tell {targetPlayer} *{playerPayload.PlayerName}"
                         // Since only outgoing tells are affected, {targetPlayer} and {playerPayload.PlayerName} will be the same

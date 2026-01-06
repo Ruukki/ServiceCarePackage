@@ -264,28 +264,79 @@ internal class SettingsWindow : Window, IDisposable
         {
             if (CharacterKey.TryParse(addKeyBuffer.Trim(), out var key) && key is not null)
             {
-                bool worldExists = configManager.Current.OwnerChars.Keys.Any(k =>
-                    CharacterKey.TryParse(k, out var existing) &&
-                    existing is not null &&
-                    existing.World.Equals(key.World, StringComparison.OrdinalIgnoreCase));
+                var keyText = addKeyBuffer.Trim();
+                var aliasText = addAliasBuffer.Trim();
+                var colorText = addColorBuffer;
 
-                if (!worldExists)
+                if (aliasText.Length == 0)
                 {
-                    configManager.Current.OwnerChars[key.ToString()] = new CharData
-                    {
-                        Alias = addAliasBuffer.Trim(),
-                        ColorHex = NormalizeHex(addColorBuffer)
-                    };
-
-                    // configManager.Save();
+                    ImGui.OpenPopup("AliasRequired");
                 }
                 else
                 {
-                    // Optional: show feedback
-                    ImGui.OpenPopup("World already exists");
+                    string newKeyString = key.ToString();
+
+                    bool comboExists = configManager.Current.OwnerChars.Any(kvp =>
+                    {
+                        // Ignore the entry we are updating (same dictionary key)
+                        if (string.Equals(kvp.Key, newKeyString, StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        // Parse existing dictionary key into CharacterKey
+                        if (!CharacterKey.TryParse(kvp.Key, out var existingKey) || existingKey is null)
+                            return false;
+
+                        // Compare World + Alias
+                        if (!existingKey.World.Equals(key.World, StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        var existingAlias = kvp.Value?.Alias?.Trim();
+                        if (string.IsNullOrEmpty(existingAlias))
+                            return false;
+
+                        return existingAlias.Equals(aliasText, StringComparison.OrdinalIgnoreCase);
+                    });
+
+                    if (comboExists)
+                    {
+                        ImGui.OpenPopup("WorldAliasExists");
+                    }
+                    else
+                    {
+                        configManager.Current.OwnerChars[newKeyString] = new CharData
+                        {
+                            Alias = aliasText,
+                            ColorHex = NormalizeHex(colorText)
+                        };
+
+                        // configManager.Save();
+                    }
                 }
             }
         }
+
+        #region PopUps
+        if (ImGui.BeginPopupModal("WorldAliasExists", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("This World + Alias already exists.");
+            ImGui.Separator();
+
+            if (ImGui.Button("OK"))
+                ImGui.CloseCurrentPopup();
+
+            ImGui.EndPopup();
+        }
+        if (ImGui.BeginPopupModal("AliasRequired", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("Alias is required.");
+            ImGui.Separator();
+
+            if (ImGui.Button("OK"))
+                ImGui.CloseCurrentPopup();
+
+            ImGui.EndPopup();
+        }
+        #endregion
 
         ImGui.SameLine();
         CharacterKey? owner;
@@ -332,8 +383,13 @@ internal class SettingsWindow : Window, IDisposable
                 var aliasBuf = entry.Alias ?? "";
                 if (ImGui.InputText("##alias", ref aliasBuf, 128))
                 {
-                    entry.Alias = aliasBuf;
-                    //configManager.Save();
+                    aliasBuf = aliasBuf.Trim();
+
+                    if (aliasBuf.Length > 0)
+                    {
+                        entry.Alias = aliasBuf;
+                        // configManager.Save();
+                    }
                 }
 
                 // Color editable (hex)

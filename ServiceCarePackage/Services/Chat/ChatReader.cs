@@ -18,6 +18,7 @@ using ServiceCarePackage.Services.Movement;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -85,9 +86,9 @@ namespace ServiceCarePackage.Services.Chat
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
             var localPlayerName = playerState.CharacterName;
             CharacterKey? senderKey = null;
-            var selfMessage = sender.TextValue.Equals(localPlayerName);
+            var selfMessage = Regex.Match(sender.TextValue, $@"(?i)^\W?{localPlayerName}$").Success;
             var isSenderOwner = FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey?.ToString()??"");
-
+            
             if (sender.Payloads.Count > 1)
             {
                 senderKey = sender.TryGetSenderNameAndWorld(playerState);
@@ -104,7 +105,7 @@ namespace ServiceCarePackage.Services.Chat
                 }
             }
 
-            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message);
+            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message.TextValue.Trim());
             var runner = Task.Run(() => commandsHandler.TryDispatchAsync(ctx));
             runner.Wait();
             if (runner.Result)
@@ -195,7 +196,7 @@ namespace ServiceCarePackage.Services.Chat
 
             foreach (var p in payloads)
             {
-                if (p is PlayerPayload pp && pp.PlayerName == originalName)
+                if (p is PlayerPayload pp && Regex.Match(pp.PlayerName, $@"(?i)^\W?{originalName}$").Success)
                 {
                     newPayloads.Add(pp);
                     continue;
