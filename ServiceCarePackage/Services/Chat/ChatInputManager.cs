@@ -97,15 +97,13 @@ namespace ServiceCarePackage.Services.Chat
                         // Using /gag command on yourself sends /tell which should be caught by this
                         // Depends on the message to start like :"/tell {targetPlayer} *{playerPayload.PlayerName}"
                         // Since only outgoing tells are affected, {targetPlayer} and {playerPayload.PlayerName} will be the same
-                        var selfTellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?<name>\S+\s{1}\S+)@\S+\s{1}\*\k<name>(?=\s|$)";
+                        /*var selfTellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?<name>\S+\s{1}\S+)@\S+\s{1}\*\k<name>(?=\s|$)";
 
-                        //log.Debug($"{Regex.Match(messageDecoded, selfTellRegex).Value}");
-                        // If the condition is not matched here, it means we are performing a self-tell (someone is messaging us), so return original.
                         if (!Regex.Match(messageDecoded, selfTellRegex).Value.IsNullOrEmpty())
                         {
                             log.Debug("[Chat Processor]: Ignoring Message as it is a self tell garbled message.");
                             //return ProcessChatInputHook.Original(uiModule, message, a3);
-                        }
+                        }*/
 
 
                         // Match any other outgoing tell to preserve target name

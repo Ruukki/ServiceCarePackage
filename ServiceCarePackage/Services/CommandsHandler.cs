@@ -28,7 +28,7 @@ namespace ServiceCarePackage.Services
 
             foreach (IChatCommandHandler handler in handlers)
             {
-                log.Debug(handler.GetType().Name);                
+                //log.Debug(handler.GetType().Name);                
                 Match match = handler.Pattern.Match(ctx.message.TextValue);
                 
                 if (!match.Success) continue;

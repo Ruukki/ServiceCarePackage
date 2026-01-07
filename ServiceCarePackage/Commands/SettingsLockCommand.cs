@@ -48,7 +48,7 @@ namespace ServiceCarePackage.Commands
 
         public bool CanExecute(ChatCommandContext ctx, Match match)
         {
-            if (true//CommandGuards.OwnerOnly(ctx)
+            if (CommandGuards.OwnerOnly(ctx)
                 && CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster ? Array.Empty<XivChatType>() : new[] { XivChatType.Say }))
             {
                 return true;
