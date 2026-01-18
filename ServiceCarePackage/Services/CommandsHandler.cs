@@ -32,9 +32,12 @@ namespace ServiceCarePackage.Services
                 Match match = handler.Pattern.Match(ctx.message.TextValue);
                 
                 if (!match.Success) continue;
-                
+
                 if (!handler.CanExecute(ctx, match))
+                {
+                    //log.Debug(handler.GetType().Name + " Success " + match.Groups[1].Value);
                     return true; // "handled" in the sense that the text was a command, but disallowed
+                }
 
                 await handler.HandleAsync(ctx, match, ct).ConfigureAwait(false);
                 return true;

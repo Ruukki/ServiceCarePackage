@@ -48,6 +48,9 @@ namespace ServiceCarePackage.Commands
 
         public bool CanExecute(ChatCommandContext ctx, Match match)
         {
+            log.Debug($"{FixedConfig.CharConfig.EnablePuppetMasterHadcore}");
+            log.Debug($"{CommandGuards.OwnerOnly(ctx)}");
+            log.Debug($"{CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster ? Array.Empty<XivChatType>() : new[] {XivChatType.Say})}");
             if (FixedConfig.CharConfig.EnablePuppetMasterHadcore
                 && CommandGuards.OwnerOnly(ctx)
                 && CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster ? Array.Empty<XivChatType>() : new[] { XivChatType.Say }))

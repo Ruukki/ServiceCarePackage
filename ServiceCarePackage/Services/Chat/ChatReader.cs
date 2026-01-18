@@ -86,13 +86,13 @@ namespace ServiceCarePackage.Services.Chat
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
             var localPlayerName = playerState.CharacterName;
             CharacterKey? senderKey = null;
-            var selfMessage = Regex.Match(sender.TextValue, $@"(?i)^\W?{localPlayerName}$").Success;
-            var isSenderOwner = FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey?.ToString()??"");
+            var selfMessage = Regex.Match(sender.TextValue, $@"(?i)^\W?{localPlayerName}$").Success;            
             
             if (sender.Payloads.Count > 1)
             {
                 senderKey = sender.TryGetSenderNameAndWorld(playerState);
             }
+            var isSenderOwner = FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey?.ToString() ?? "");
 
             //_log.Debug($"Sender: {sender.TextValue} type: {type}:{Enum.GetName(typeof(XivChatType), type)} message: {message.TextValue}");
             var originalSender = sender;
@@ -105,7 +105,7 @@ namespace ServiceCarePackage.Services.Chat
                 }
             }
 
-            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message.TextValue.Trim());
+            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message.TextValue.Trim(), isSenderOwner);
             var runner = Task.Run(() => commandsHandler.TryDispatchAsync(ctx));
             runner.Wait();
             if (runner.Result)
