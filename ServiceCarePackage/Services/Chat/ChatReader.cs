@@ -117,7 +117,7 @@ namespace ServiceCarePackage.Services.Chat
             //Chat hider
             //log.Debug($"{FixedConfig.IsActive_ChatHider} {message.Payloads.Count == 1} {message.TextValue.Contains(FixedConfig.CommandName)} {message.Payloads[0] is TextPayload}");
             if (FixedConfig.IsActive_ChatHider
-                && !(type == XivChatType.TellIncoming || type == XivChatType.TellIncoming)
+                && !(type == XivChatType.TellOutgoing)
                 && message.Payloads.Count == 1
                 && !message.TextValue.Contains(FixedConfig.CommandName)
                 && message.Payloads[0] is TextPayload tp)
