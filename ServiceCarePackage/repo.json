@@ -11,8 +11,8 @@
                  "kinky"
              ],
     "InternalName":  "ServiceCarePackage",
-    "AssemblyVersion":  "20260118.173212",
-    "TestingAssemblyVersion":  "20260118.173212",
+    "AssemblyVersion":  "20260118.174017",
+    "TestingAssemblyVersion":  "20260118.174017",
     "DalamudApiLevel":  14,
     "LoadPriority":  696969,
     "RepoUrl":  "https://github.com/Ruukki/ServiceCarePackage",
@@ -20,6 +20,6 @@
     "IsTestingExclusive":  "False",
     "DownloadCount":  420,
     "LastUpdate":  1618608322,
-    "DownloadLinkInstall":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260118.173212/ServiceCarePackage.zip",
-    "DownloadLinkUpdate":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260118.173212/ServiceCarePackage.zip"
+    "DownloadLinkInstall":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260118.174017/ServiceCarePackage.zip",
+    "DownloadLinkUpdate":  "https://github.com/Ruukki/ServiceCarePackage/releases/download/20260118.174017/ServiceCarePackage.zip"
 }]
