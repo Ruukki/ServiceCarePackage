@@ -34,6 +34,15 @@ if ($versionNode -ne $null) {
 $csproj.Save($csprojPath)
 Write-Host "✅ Updated csproj version to $version"
 
+# Build solution/project
+dotnet build $csprojPath -c Debug -p:Platform=x64
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Build failed. Stopping release."
+}
+
+Write-Host "✅ Build completed"
+
 # Compress build folder
 Compress-Archive -Path "$buildPath\*" -DestinationPath $zipPath -Force
 Write-Host "✅ Zipped $buildPath into $zipPath"
