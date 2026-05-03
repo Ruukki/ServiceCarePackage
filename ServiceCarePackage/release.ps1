@@ -3,7 +3,7 @@ param(
     [string]$jsonFile = "repo.json"
 )
 
-$version = Get-Date -Format "yyyy.MM.dd.HHmmss"
+$version = Get-Date -Format "yyyy.MM.dd.HHmm"
 $zipName = "ServiceCarePackage.zip"
 $zipPath = ".\$zipName"
 
