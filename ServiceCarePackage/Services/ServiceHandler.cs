@@ -190,7 +190,9 @@ namespace ServiceCarePackage.Services
             {
                 var configuration = _.GetRequiredService<Configuration>();
                 var settings = _.GetRequiredService<SettingsWindow>();
-                return new MainWindow(configuration, settings);
+                var config = _.GetRequiredService<ConfigManager>();
+                var messageSender = _.GetRequiredService<MessageSender>();
+                return new MainWindow(configuration, settings, config, messageSender);
             });
         }
 

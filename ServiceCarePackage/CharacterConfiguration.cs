@@ -26,6 +26,7 @@ namespace ServiceCarePackage
         #region Feature data
         public Dictionary<string, CharData> OwnerChars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CharData> OtherChars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SavedCommandData> SavedCommands { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public string DisplayName { get; set; } = "Slut";
         public string CommandName { get; set; } = "slut";
         public string AliasColorHex { get; set; } = "#FFFFFF";
