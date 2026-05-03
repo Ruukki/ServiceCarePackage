@@ -3,7 +3,7 @@ param(
     [string]$jsonFile = "repo.json"
 )
 
-$version = Get-Date -Format "yyyyMMdd.HHmmss"
+$version = Get-Date -Format "yyyy.MM.dd.HHmmss"
 $zipName = "ServiceCarePackage.zip"
 $zipPath = ".\$zipName"
 
@@ -35,7 +35,8 @@ $csproj.Save($csprojPath)
 Write-Host "✅ Updated csproj version to $version"
 
 # Build solution/project
-dotnet build $csprojPath -c Debug -p:Platform=x64
+dotnet clean $csprojPath -c Debug -p:Platform=x64
+dotnet build $csprojPath -c Debug -p:Platform=x64 --no-incremental
 
 if ($LASTEXITCODE -ne 0) {
     throw "Build failed. Stopping release."
@@ -43,7 +44,12 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "✅ Build completed"
 
+
 # Compress build folder
+if (Test-Path $zipPath) {
+    Remove-Item $zipPath -Force
+}
+
 Compress-Archive -Path "$buildPath\*" -DestinationPath $zipPath -Force
 Write-Host "✅ Zipped $buildPath into $zipPath"
 
