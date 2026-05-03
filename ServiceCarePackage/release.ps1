@@ -13,25 +13,28 @@ $csprojPath = ".\ServiceCarePackage.csproj"
 [xml]$csproj = Get-Content $csprojPath
 
 # Try to find existing Version node
-$versionNode = $csproj.SelectSingleNode("//Project/PropertyGroup/Version")
+function Set-CsprojProperty($name, $value) {
+    $node = $csproj.SelectSingleNode("//Project/PropertyGroup/$name")
 
-if ($versionNode -ne $null) {
-    $versionNode.InnerText = $version
-} else {
-    # Find (or create) PropertyGroup
-    $propertyGroup = $csproj.SelectSingleNode("//Project/PropertyGroup")
-    if ($propertyGroup -eq $null) {
-        $propertyGroup = $csproj.CreateElement("PropertyGroup")
-        $csproj.Project.AppendChild($propertyGroup) | Out-Null
+    if ($node -ne $null) {
+        $node.InnerText = $value
+    } else {
+        $propertyGroup = $csproj.SelectSingleNode("//Project/PropertyGroup")
+        if ($propertyGroup -eq $null) {
+            $propertyGroup = $csproj.CreateElement("PropertyGroup")
+            $csproj.Project.AppendChild($propertyGroup) | Out-Null
+        }
+
+        $newNode = $csproj.CreateElement($name)
+        $newNode.InnerText = $value
+        $propertyGroup.AppendChild($newNode) | Out-Null
     }
-
-    # Create Version node
-    $newNode = $csproj.CreateElement("Version")
-    $newNode.InnerText = $version
-    $propertyGroup.AppendChild($newNode) | Out-Null
 }
 
-$csproj.Save($csprojPath)
+Set-CsprojProperty "Version" $version
+Set-CsprojProperty "AssemblyVersion" $version
+Set-CsprojProperty "FileVersion" $version
+Set-CsprojProperty "InformationalVersion" $version
 Write-Host "✅ Updated csproj version to $version"
 
 # Build solution/project
