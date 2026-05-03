@@ -7,6 +7,33 @@ $version = Get-Date -Format "yyyyMMdd.HHmmss"
 $zipName = "ServiceCarePackage.zip"
 $zipPath = ".\$zipName"
 
+# Update csproj version
+$csprojPath = ".\ServiceCarePackage.csproj"
+
+[xml]$csproj = Get-Content $csprojPath
+
+# Try to find existing Version node
+$versionNode = $csproj.SelectSingleNode("//Project/PropertyGroup/Version")
+
+if ($versionNode -ne $null) {
+    $versionNode.InnerText = $version
+} else {
+    # Find (or create) PropertyGroup
+    $propertyGroup = $csproj.SelectSingleNode("//Project/PropertyGroup")
+    if ($propertyGroup -eq $null) {
+        $propertyGroup = $csproj.CreateElement("PropertyGroup")
+        $csproj.Project.AppendChild($propertyGroup) | Out-Null
+    }
+
+    # Create Version node
+    $newNode = $csproj.CreateElement("Version")
+    $newNode.InnerText = $version
+    $propertyGroup.AppendChild($newNode) | Out-Null
+}
+
+$csproj.Save($csprojPath)
+Write-Host "✅ Updated csproj version to $version"
+
 # Compress build folder
 Compress-Archive -Path "$buildPath\*" -DestinationPath $zipPath -Force
 Write-Host "✅ Zipped $buildPath into $zipPath"
