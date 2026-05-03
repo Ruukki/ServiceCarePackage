@@ -35,6 +35,8 @@ Set-CsprojProperty "Version" $version
 Set-CsprojProperty "AssemblyVersion" $version
 Set-CsprojProperty "FileVersion" $version
 Set-CsprojProperty "InformationalVersion" $version
+
+$csproj.Save((Resolve-Path $csprojPath))
 Write-Host "✅ Updated csproj version to $version"
 
 # Build solution/project
