@@ -46,7 +46,7 @@ namespace ServiceCarePackage.Services
         // public const string SendChat = "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B F2 48 8B F9 45 84 C9";
 
         // DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto, Define via SignatureAttribute.
-        public const string ProcessChatInput = "E8 ?? ?? ?? ?? FE 87 ?? ?? ?? ?? C7 87";
+        public const string ProcessChatInput = "E8 ?? ?? ?? ?? FE 87 B5 02 00 00";//"E8 ?? ?? ?? ?? FE 87 ?? ?? ?? ?? C7 87"; 
 
         // Spatial Audio Sigs from VFXEDITOR
         internal const string CreateStaticVfx = "E8 ?? ?? ?? ?? F3 0F 10 35 ?? ?? ?? ?? 48 89 43 08";

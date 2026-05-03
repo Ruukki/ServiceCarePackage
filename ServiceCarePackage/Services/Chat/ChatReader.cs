@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.JobGauge.Enums;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -59,7 +60,7 @@ namespace ServiceCarePackage.Services.Chat
             // Begin our OnChatMessage Detection
             this.clientChat.CheckMessageHandled += Chat_OnCheckMessageHandled;
             //_clientChat.ChatMessage += Chat_OnChatMessage;
-            this.clientChat.ChatMessageHandled += Chat_OnChatMessageHandled;            
+            //this.clientChat.ChatMessageHandled += Chat_OnChatMessageHandled;            
             //_clientChat.ChatMessageUnhandled += Chat_OnChatMessageUnhandled;
         }
 
@@ -68,7 +69,7 @@ namespace ServiceCarePackage.Services.Chat
             framework.Update -= framework_Update;
             clientChat.CheckMessageHandled -= Chat_OnCheckMessageHandled;
             //_clientChat.ChatMessage -= Chat_OnChatMessage;
-            clientChat.ChatMessageHandled -= Chat_OnChatMessageHandled;
+            //clientChat.ChatMessageHandled -= Chat_OnChatMessageHandled;
             //_clientChat.ChatMessageUnhandled -= Chat_OnChatMessageUnhandled;
         }
 
@@ -81,46 +82,48 @@ namespace ServiceCarePackage.Services.Chat
         /// <item><c>message</c><param name="message"> - The message that was sent.</param></item>
         /// <item><c>isHandled</c><param name="isHandled"> - Whether or not the message was handled.</param></item>
         /// </list> </summary>
-        private void Chat_OnCheckMessageHandled(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
+        private void Chat_OnCheckMessageHandled(IHandleableChatMessage message)
+            //(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
         {
+            //log.Warning(message.Message.TextValue);
             var chatTypes = new[] { XivChatType.TellIncoming, XivChatType.TellOutgoing };
             var localPlayerName = playerState.CharacterName;
             CharacterKey? senderKey = null;
-            var selfMessage = Regex.Match(sender.TextValue, $@"(?i)^\W?{localPlayerName}$").Success;            
+            var selfMessage = Regex.Match(message.Sender.TextValue, $@"(?i)^\W?{localPlayerName}$").Success;            
             
-            if (sender.Payloads.Count > 1)
+            if (message.Sender.Payloads.Count > 1)
             {
-                senderKey = sender.TryGetSenderNameAndWorld(playerState);
+                senderKey = message.Sender.TryGetSenderNameAndWorld(playerState);
             }
             var isSenderOwner = FixedConfig.CharConfig.OwnerChars.ContainsKey(senderKey?.ToString() ?? "");
 
             //_log.Debug($"Sender: {sender.TextValue} type: {type}:{Enum.GetName(typeof(XivChatType), type)} message: {message.TextValue}");
-            var originalSender = sender;
+            var originalSender = message.Sender;
 
-            if ((int)type <= 107 && selfMessage)
+            if ((int)message.LogKind <= 107 && selfMessage)
             {
                 if (FixedConfig.CharConfig.EnableAliasNameChanger)
                 {
-                    SwapNameToAlias(sender, FixedConfig.CharConfig.AliasColorHex, localPlayerName, FixedConfig.DisplayName);
+                    SwapNameToAlias(message.Sender, FixedConfig.CharConfig.AliasColorHex, localPlayerName, FixedConfig.DisplayName);
                 }
             }
 
-            var ctx = new ChatCommandContext(type, timestamp, senderKey, sender, message.TextValue.Trim(), isSenderOwner);
+            var ctx = new ChatCommandContext(message.LogKind, message.Timestamp, senderKey, message.Sender, message.Message.TextValue.Trim(), isSenderOwner);
             var runner = Task.Run(() => commandsHandler.TryDispatchAsync(ctx));
             runner.Wait();
             if (runner.Result)
             {
-                isHandled = true;
+                message.PreventOriginal();
                 return;
             }
 
             //Chat hider
             //log.Debug($"{FixedConfig.IsActive_ChatHider} {message.Payloads.Count == 1} {message.TextValue.Contains(FixedConfig.CommandName)} {message.Payloads[0] is TextPayload}");
             if (FixedConfig.IsActive_ChatHider
-                && !(type == XivChatType.TellOutgoing)
-                && message.Payloads.Count == 1
-                && !message.TextValue.Contains(FixedConfig.CommandName)
-                && message.Payloads[0] is TextPayload tp)
+                && !(message.LogKind == XivChatType.TellOutgoing)
+                && message.Message.Payloads.Count == 1
+                && !message.Message.TextValue.Contains(FixedConfig.CommandName)
+                && message.Message.Payloads[0] is TextPayload tp)
             {
                 if (tp.Text != null)
                 {
@@ -177,14 +180,14 @@ namespace ServiceCarePackage.Services.Chat
             }*/
 
             // Apply aliases for others
-            if ((int)type <= 107 && senderKey != null)
+            if ((int)message.LogKind <= 107 && senderKey != null)
             {
-                var alias = FixedConfig.CharConfig.OwnerChars.Where(x => x.Key.Equals(senderKey.ToString()));
+                var alias = FixedConfig.AliasDataUnion.Where(x => x.Key.Equals(senderKey.ToString()));
                 if (alias.Any())
                 {
                     var first = alias.First();
 
-                    SwapNameToAlias(sender, first.Value.ColorHex, senderKey.Name, first.Value.Alias);
+                    SwapNameToAlias(message.Sender, first.Value.ColorHex, senderKey.Name, first.Value.Alias);
                 }
             }
         }

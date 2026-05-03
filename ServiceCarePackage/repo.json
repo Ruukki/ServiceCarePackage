@@ -13,7 +13,7 @@
     "InternalName":  "ServiceCarePackage",
     "AssemblyVersion":  "20260118.174055",
     "TestingAssemblyVersion":  "20260118.174055",
-    "DalamudApiLevel":  14,
+    "DalamudApiLevel":  15,
     "LoadPriority":  696969,
     "RepoUrl":  "https://github.com/Ruukki/ServiceCarePackage",
     "IsHide":  "False",

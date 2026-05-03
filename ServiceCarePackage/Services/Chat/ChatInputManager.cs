@@ -6,6 +6,8 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.Shell;
 using Serilog.Core;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.Helpers;
@@ -23,8 +25,9 @@ namespace ServiceCarePackage.Services.Chat
     internal class ChatInputManager : IDisposable
     {
         private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** message, IntPtr a3);
+        private unsafe delegate void ProcessChatInputDelegateNew(ShellCommandModule* uiModule, Utf8String* message, UIModule* a3);
         [Signature(Signatures.ProcessChatInput, DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
-        private Hook<ProcessChatInputDelegate> ProcessChatInputHook { get; set; } = null!;
+        private Hook<ProcessChatInputDelegateNew> ProcessChatInputHook { get; set; } = null!;
 
         private ILog log;
         private ITranslator translator;
@@ -53,138 +56,89 @@ namespace ServiceCarePackage.Services.Chat
             ProcessChatInputHook.SafeDispose();
         }
 
-        private unsafe byte ProcessChatInputDetour(IntPtr uiModule, byte** message, IntPtr a3)
+        private unsafe void ProcessChatInputDetour(ShellCommandModule* uiModule, Utf8String* message, UIModule* a3)
         {
             try
             {
-                // Grab the original string.
-                var originalSeString = MemoryHelper.ReadSeStringNullTerminated((nint)(*message));
-                var messageDecoded = originalSeString.ToString();
+                //log.Warning(message->ToString());
+                //message->SetString(translator.Translate(message->ToString()));
+                var originalMessage = message->ToString();
 
-                // Debug the output (remove later)
-                /*foreach (var payload in originalSeString.Payloads)
+                if (string.IsNullOrWhiteSpace(originalMessage))
                 {
-                    log.Debug($"Message Payload [{payload.Type}]: {payload.ToString()}");
+                    ProcessChatInputHook.Original(uiModule, message, a3);
+                    return;
                 }
-                log.Debug($"Message Payload Present");*/
 
-                if (string.IsNullOrWhiteSpace(messageDecoded))
-                    return ProcessChatInputHook.Original(uiModule, message, a3);
-
-                // If we are not meant to garble the message, then return original.
-                if (false)
-                    return ProcessChatInputHook.Original(uiModule, message, a3);
-
-                /* -------------------------- MUFFLERCORE / GAGSPEAK CHAT GARBLER TRANSLATION LOGIC -------------------------- */
-                // Firstly, make sure that we are setup to allow garbling in the current channel.
                 var prefix = string.Empty;
                 var tellName = string.Empty;
                 var tellWorld = string.Empty;
                 InputChannel channel = 0;
-                //var muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)ChatLogAgent.CurrentChannel());
 
-                // It's possible to be in a channel (ex. Say) but send (/party Hello World), we must check this.
-                if (messageDecoded.StartsWith("/"))
+                if (originalMessage.StartsWith("/"))
                 {
-                    // If its a command outside a chatChannel command, return original.
-                    /*if (!ChatLogAgent.IsPrefixForGsChannel(messageDecoded, out prefix, out channel))
-                        return ProcessChatInputHook.Original(uiModule, message, a3);*/
-
-                    // Handle Tells, these are special, use advanced Regex to protect name mix-up
                     if (channel is InputChannel.Tell_In)
                     {
-                        //log.Debug($"[Chat Processor]: Matched Command is a tell command");
-                        // Using /gag command on yourself sends /tell which should be caught by this
-                        // Depends on the message to start like :"/tell {targetPlayer} *{playerPayload.PlayerName}"
-                        // Since only outgoing tells are affected, {targetPlayer} and {playerPayload.PlayerName} will be the same
-                        /*var selfTellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?<name>\S+\s{1}\S+)@\S+\s{1}\*\k<name>(?=\s|$)";
-
-                        if (!Regex.Match(messageDecoded, selfTellRegex).Value.IsNullOrEmpty())
-                        {
-                            log.Debug("[Chat Processor]: Ignoring Message as it is a self tell garbled message.");
-                            //return ProcessChatInputHook.Original(uiModule, message, a3);
-                        }*/
-
-
                         // Match any other outgoing tell to preserve target name
                         var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:(\S+\s?\S+)@(\S+)|\<r\>)\s?(?=\S|\s|$)";
-                        var regexMatch = Regex.Match(messageDecoded, tellRegex);
+                        var regexMatch = Regex.Match(originalMessage, tellRegex);
                         prefix = regexMatch.Value;
                         tellName = regexMatch.Groups[1].Value;
                         tellWorld += regexMatch.Groups[2].Value;
                     }
-                    //log.Debug($"Matched Command [{prefix}] [{tellName}] for [{channel}]");
 
                     //Restore swapped alias names
                     var recoveredName = string.Empty;
                     CharData recoveredData = new();
 
-                    if (TryFindByAliasAndWorld(FixedConfig.CharConfig.OwnerChars, tellName, tellWorld, out recoveredName, out recoveredData))
+                    if (TryFindByAliasAndWorld(FixedConfig.AliasDataUnion, tellName, tellWorld, out recoveredName, out recoveredData))
                     {
                         prefix = prefix.Replace($"{tellName}@{tellWorld}", recoveredName);
                     }
-
-                    // Finally if we reached this point, update `muffleAllowedForChannel` to reflect the intended channel.
-                    //muffleMessage = g.AllowedGarblerChannels.IsActiveChannel((int)channel);
                 }
 
-                // If it's not allowed, do not garble.
-                if (/*muffleMessage*/true)
+                log.Debug($"Detouring Message: {originalMessage}");
+                
+                var stringToProcess = originalMessage.Substring(prefix.Length);
+
+                string? output;
+                if (FixedConfig.CharConfig.EnableTranslate)
                 {
-                    log.Debug($"Detouring Message: {messageDecoded}");
-
-                    // only obtain the text payloads from this message, as nothing else should madder.
-                    var textPayloads = originalSeString.Payloads.OfType<TextPayload>().ToList();
-                    // merge together the text of all the split text payloads.
-                    var originalText = string.Join("", textPayloads.Select(tp => tp.Text));
-                    // Get the string to garble starting after the prefix text.
-                    var stringToProcess = originalText.Substring(prefix.Length);
-                    // set the output to the prefix + the garbled message.
-                    /*var output = string.IsNullOrEmpty(prefix)
-                        ? _muffler.ProcessMessage(stringToProcess)
-                        : prefix + " " + _muffler.ProcessMessage(stringToProcess);*/
-
-                    string? output;
-                    if (FixedConfig.CharConfig.EnableTranslate)
-                    {
-                        output = string.IsNullOrEmpty(prefix)
-                            ? translator.Translate(stringToProcess)
-                            : prefix + " " + translator.Translate(stringToProcess);
-                    }
-                    else
-                    {
-                        output = string.IsNullOrEmpty(prefix)
-                            ? stringToProcess
-                            : prefix + " " + stringToProcess;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(output))
-                        return 0; // Do not sent message.
-
-                    log.Debug("Output: " + output);
-                    var newSeString = new SeStringBuilder().Add(new TextPayload(output)).Build();
-
-                    // Verify its a legal width
-                    if (newSeString.TextValue.Length <= 500)
-                    {
-                        var utf8String = Utf8String.FromString(".");
-                        utf8String->SetString(newSeString.Encode());
-                        return ProcessChatInputHook.Original(uiModule, (byte**)((nint)utf8String).ToPointer(), a3);
-                    }
-                    else
-                    {
-                        log.Error("Chat Garbler Variant of Message was longer than max message length!");
-                        return ProcessChatInputHook.Original(uiModule, message, a3);
-                    }
+                    output = string.IsNullOrEmpty(prefix)
+                        ? translator.Translate(stringToProcess)
+                        : prefix + " " + translator.Translate(stringToProcess);
                 }
+                else
+                {
+                    output = string.IsNullOrEmpty(prefix)
+                        ? stringToProcess
+                        : prefix + " " + stringToProcess;
+                }
+
+                if (string.IsNullOrWhiteSpace(output))
+                    return; // Do not sent message.
+
+                log.Debug("Output: " + output);
+
+                // Verify its a legal width
+                if (output.Length <= 500)
+                {
+                    message->SetString(output);
+                }
+                else
+                {
+                    log.Error("Chat Garbler Variant of Message was longer than max message length!");
+                }
+
+                ProcessChatInputHook.Original(uiModule, message, a3);
+                return;
+
             }
             catch (Exception e)
             {
                 log.Error($"Error sending message to chat box (secondary): {e}");
             }
 
-            // return the original message untranslated
-            return ProcessChatInputHook.Original(uiModule, message, a3);
         }
 
         void IDisposable.Dispose()

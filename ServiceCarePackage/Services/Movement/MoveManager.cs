@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.Services.Logs;
 using System;
@@ -161,18 +162,24 @@ namespace ServiceCarePackage.Services.Movement
             if (!insideInstance())
             {
                 var control = (FFXIVClientStructs.FFXIV.Client.Game.Control.Control*)gameControl;
-                bool isWalking = control->IsWalking;
+
+                //bool isWalking = control->IsWalking;
+                bool isWalking = *((byte*)control + 0x7637) != 0;
+
+                //log.Warning($"{isWalking}");
                 if (isMountedOrInCombat() /*|| PlayerContext.isInWhitelistedTerritory()*/)
                 {
                     if (isWalking)
                     {
-                        control->IsWalking = false;
+                        //control->IsWalking = false;
+                        *((byte*)control + 0x7637) = 0;
                         return;
                     }
                 }
                 else if (!isWalking)
                 {
-                    control->IsWalking = true;
+                    //control->IsWalking = true;
+                    *((byte*)control + 0x7637) = 1;
                     return;
                 }
             }
@@ -195,6 +202,7 @@ namespace ServiceCarePackage.Services.Movement
         #endregion
         private void OnUpdate(IFramework _)
         {
+            
             if (_pendingEnable)
             {
                 _pendingEnable = false;
@@ -209,7 +217,7 @@ namespace ServiceCarePackage.Services.Movement
                     _autoEnableCts = null;
                 }
             }
-
+            
             if (FixedConfig.CharConfig.EnableForcedWalk)
             {
                 ForceWalk();

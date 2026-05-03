@@ -30,6 +30,10 @@ internal class SettingsWindow : Window, IDisposable
     private string filterBuffer = "";
     private string addColorBuffer = "#FFFFFF";
 
+    private string addKeyBufferOthers = "";
+    private string addAliasBufferOthers = "";
+    private string filterBufferOthers = "";
+    private string addColorBufferOthers = "#FFFFFF";
 
     // We give this window a constant ID using ###.
     // This allows for labels to be dynamic, like "{FPS Counter}fps###XYZ counter window",
@@ -221,6 +225,13 @@ internal class SettingsWindow : Window, IDisposable
                 ImGui.EndTabItem();
             }
 
+            if (ImGui.BeginTabItem("About others"))
+            {
+                DrawOthers();
+
+                ImGui.EndTabItem();
+            }
+
             ImGui.EndTabBar();
         }
         
@@ -248,6 +259,7 @@ internal class SettingsWindow : Window, IDisposable
 
     private void DrawOwners()
     {
+
         ImGui.TextUnformatted("Aliases");
         ImGui.Separator();
 
@@ -276,7 +288,9 @@ internal class SettingsWindow : Window, IDisposable
                 {
                     string newKeyString = key.ToString();
 
-                    bool comboExists = configManager.Current.OwnerChars.Any(kvp =>
+                    var currentAliasListUnion = configManager.Current.OwnerChars.Union(configManager.Current.OtherChars).ToDictionary();
+
+                    bool comboExists = currentAliasListUnion.Any(kvp =>
                     {
                         // Ignore the entry we are updating (same dictionary key)
                         if (string.Equals(kvp.Key, newKeyString, StringComparison.OrdinalIgnoreCase))
@@ -408,6 +422,183 @@ internal class SettingsWindow : Window, IDisposable
                 if (ImGui.Button("Delete"))
                 {
                     configManager.Current.OwnerChars.Remove(charKey);
+                    //configManager.Save();
+                    ImGui.PopID();
+                    break;
+                }
+
+                ImGui.PopID();
+            }
+
+            ImGui.EndTable();
+        }
+    }
+
+    private void DrawOthers()
+    {
+
+        ImGui.TextUnformatted("Aliases");
+        ImGui.Separator();
+
+        // Filter
+        ImGui.InputText("Filter", ref filterBufferOthers, 128);
+        Tooltip("Search for others char list");
+
+        // Add row
+        ImGui.InputText("Character (Name@World)", ref addKeyBufferOthers, 128);
+        ImGui.InputText("Alias", ref addAliasBufferOthers, 128);
+
+        ImGui.SameLine();
+        if (ImGui.Button("Add / Update"))
+        {
+            if (CharacterKey.TryParse(addKeyBufferOthers.Trim(), out var key) && key is not null)
+            {
+                var keyText = addKeyBufferOthers.Trim();
+                var aliasText = addAliasBufferOthers.Trim();
+                var colorText = addColorBufferOthers;
+
+                if (aliasText.Length == 0)
+                {
+                    ImGui.OpenPopup("AliasRequired");
+                }
+                else
+                {
+                    string newKeyString = key.ToString();
+
+                    var currentAliasListUnion = configManager.Current.OwnerChars.Union(configManager.Current.OtherChars).ToDictionary();
+
+                    bool comboExists = currentAliasListUnion.Any(kvp =>
+                    {
+                        // Ignore the entry we are updating (same dictionary key)
+                        if (string.Equals(kvp.Key, newKeyString, StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        // Parse existing dictionary key into CharacterKey
+                        if (!CharacterKey.TryParse(kvp.Key, out var existingKey) || existingKey is null)
+                            return false;
+
+                        // Compare World + Alias
+                        if (!existingKey.World.Equals(key.World, StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        var existingAlias = kvp.Value?.Alias?.Trim();
+                        if (string.IsNullOrEmpty(existingAlias))
+                            return false;
+
+                        return existingAlias.Equals(aliasText, StringComparison.OrdinalIgnoreCase);
+                    });
+
+                    if (comboExists)
+                    {
+                        ImGui.OpenPopup("WorldAliasExists");
+                    }
+                    else
+                    {
+                        configManager.Current.OtherChars[newKeyString] = new CharData
+                        {
+                            Alias = aliasText,
+                            ColorHex = NormalizeHex(colorText)
+                        };
+
+                        // configManager.Save();
+                    }
+                }
+            }
+        }
+
+        #region PopUps
+        if (ImGui.BeginPopupModal("WorldAliasExists", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("This World + Alias already exists.");
+            ImGui.Separator();
+
+            if (ImGui.Button("OK"))
+                ImGui.CloseCurrentPopup();
+
+            ImGui.EndPopup();
+        }
+        if (ImGui.BeginPopupModal("AliasRequired", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("Alias is required.");
+            ImGui.Separator();
+
+            if (ImGui.Button("OK"))
+                ImGui.CloseCurrentPopup();
+
+            ImGui.EndPopup();
+        }
+        #endregion
+
+        ImGui.SameLine();
+        CharacterKey? other;
+        if (ImGui.Button("Add from Target"))
+        {
+            other = targetingManager.GetTargetedPlayerName();
+            if (other != null)
+            {
+                var name = other.Name;
+                var world = other.World;
+                addKeyBufferOthers = $"{name}@{world}";
+            }
+
+        }
+
+        ImGui.Spacing();
+
+        // List
+        if (ImGui.BeginTable("AliasesTable", 4,
+            ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY,
+            new System.Numerics.Vector2(0, 250)))
+        {
+            ImGui.TableSetupColumn("Character", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Alias", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Color", ImGuiTableColumnFlags.WidthFixed, 110);
+            ImGui.TableSetupColumn("##Actions", ImGuiTableColumnFlags.WidthFixed, 80);
+            ImGui.TableHeadersRow();
+
+            foreach (var kv in configManager.Current.OtherChars.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase).ToList())
+            {
+                var charKey = kv.Key;
+                var entry = kv.Value ?? new CharData();
+
+                ImGui.TableNextRow();
+
+                // Character
+                ImGui.TableSetColumnIndex(0);
+                ImGui.TextUnformatted(charKey);
+
+                ImGui.PushID(charKey);
+
+                // Alias editable
+                ImGui.TableSetColumnIndex(1);
+                var aliasBuf = entry.Alias ?? "";
+                if (ImGui.InputText("##alias", ref aliasBuf, 128))
+                {
+                    aliasBuf = aliasBuf.Trim();
+
+                    if (aliasBuf.Length > 0)
+                    {
+                        entry.Alias = aliasBuf;
+                        // configManager.Save();
+                    }
+                }
+
+                // Color editable (hex)
+                ImGui.TableSetColumnIndex(2);
+                var colorBuf = entry.ColorHex ?? "#FFFFFF";
+                ImGui.SetNextItemWidth(-1);
+                if (ImGui.InputText("##color", ref colorBuf, 16,
+                    ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsNoBlank))
+                {
+                    entry.ColorHex = NormalizeHex(colorBuf);
+                    //configManager.Save();
+                }
+
+                // Actions
+                ImGui.TableSetColumnIndex(3);
+                if (ImGui.Button("Delete"))
+                {
+                    configManager.Current.OtherChars.Remove(charKey);
                     //configManager.Save();
                     ImGui.PopID();
                     break;

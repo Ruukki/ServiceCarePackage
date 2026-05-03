@@ -1,4 +1,5 @@
 using Dalamud.Game.Text;
+using ServiceCarePackage.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -15,6 +16,13 @@ namespace ServiceCarePackage.Config
 
         internal static string DisplayName { get { return CharConfig.DisplayName; } }        
         internal static string CommandName { get { return CharConfig.CommandName; } }
+
+        internal static Dictionary<string, CharData> AliasDataUnion { get
+            {
+                return CharConfig.OwnerChars
+                    .Union(CharConfig.OtherChars).ToDictionary();
+            }
+        }
 
         //runtime features
         internal static bool IsActive_ChatHider { get; set; } = false;
