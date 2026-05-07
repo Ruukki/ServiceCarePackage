@@ -59,16 +59,17 @@ namespace ServiceCarePackage.Commands
 
         public async Task HandleAsync(ChatCommandContext ctx, Match match, CancellationToken ct)
         {
-            //Pattern = new(FixedConfig.CommandRegex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            log.Debug(lastRegex);
-            var matched = match.Groups[1].Value?.ToLower();
-            log.Debug($"match.Success {matched}");
-            chatGui.Print(new SeStringBuilder().AddUiForeground(31).AddText($"[{ctx.sender.TextValue}]").AddUiForegroundOff()
-                .AddText($" forced you to expose contents of your wallet.")
-                .BuiltString);
-
             try
             {
+                //Pattern = new(FixedConfig.CommandRegex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                log.Debug(lastRegex);
+                var matched = match.Groups[1].Value?.ToLower();
+                log.Debug($"match.Success {matched}");
+                chatGui.Print(new SeStringBuilder().AddUiForeground(31).AddText($"[{ctx.sender.TextValue}]").AddUiForegroundOff()
+                    .AddText($" forced you to expose contents of your wallet.")
+                    .BuiltString);
+
+
                 messageSender.SendMessage($"/tell {ctx.senderOriginal} {FixedConfig.DisplayName} currently owns: {characterDataService?.GetPlayerGil()}gil and retainers have: {FixedConfig.CharConfig.RetainerGil}gil");
             }
             catch (Exception ex)
