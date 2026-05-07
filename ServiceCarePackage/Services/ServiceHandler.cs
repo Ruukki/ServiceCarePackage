@@ -128,6 +128,7 @@ namespace ServiceCarePackage.Services
             services.AddSingleton<IChatCommandHandler, ChatHidetCommand>();
             services.AddSingleton<IChatCommandHandler, SettingsLockCommand>();
             services.AddSingleton<IChatCommandHandler, MoveBlockCommand>();
+            services.AddSingleton<IChatCommandHandler, GilCheckCommand>();
             
             return services;
             //return services.AddSingleton<CommandsHandler>(_ => new CommandsHandler(_.GetServices<IChatCommandHandler>()));

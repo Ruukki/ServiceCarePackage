@@ -97,7 +97,7 @@ internal class SettingsWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Features"))
             {
                 #region FullLock
-                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulL) { ImGui.BeginDisabled(); }
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.Full) { ImGui.BeginDisabled(); }
                 ImGui.BeginGroup();
 
                 ImGui.TextDisabled("Full lock group");
@@ -128,7 +128,7 @@ internal class SettingsWindow : Window, IDisposable
                                    + "If disabled only allows owner characters to use them.");
 
                 ImGui.EndGroup();
-                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.FulL) { ImGui.EndDisabled(); }
+                if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.Full) { ImGui.EndDisabled(); }
                 #endregion
 
                 ImGui.SameLine();

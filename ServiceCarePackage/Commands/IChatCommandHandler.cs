@@ -27,7 +27,7 @@ namespace ServiceCarePackage.Commands
 
     public sealed record ChatCommandContext(
         XivChatType chatType, int timestamp,
-        CharacterKey senderIriginal, SeString sender, SeString message,
+        CharacterKey senderOriginal, SeString sender, SeString message,
         bool IsSenderOwner = false
     );
 

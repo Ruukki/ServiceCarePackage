@@ -9,6 +9,6 @@ namespace ServiceCarePackage.Enums
     {
         None = 0,
         Basic = 1,
-        FulL = 2,
+        Full = 2,
     }
 }
