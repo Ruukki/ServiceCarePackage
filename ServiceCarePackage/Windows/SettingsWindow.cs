@@ -178,6 +178,23 @@ internal class SettingsWindow : Window, IDisposable
                 }             
                 Tooltip("Duration for stun in miliseconds.");
 
+                bool gilActionBlocker = configManager.Current.GilActionBlockingActive;
+                if (ImGui.Checkbox("Gil related features", ref gilActionBlocker))
+                {
+                    configManager.Current.GilActionBlockingActive = gilActionBlocker;
+                }
+                Tooltip("Enables gil related features.");
+
+                ulong gilThreshold = configManager.Current.GilThreshhold;
+                ImGui.SetNextItemWidth(200);
+                ImGui.InputULong("Gil Threshold", ref gilThreshold);
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                {
+                    var clamped = Math.Clamp(gilThreshold, 0, ulong.MaxValue);
+                    configManager.Current.GilThreshhold = clamped;
+                }
+                Tooltip("Gil threshold for features controled by checkbox above.");
+
                 ImGui.EndGroup();
                 if (configManager.Current.SettingLockLevels >= Enums.SettingLockLevels.Basic) { ImGui.EndDisabled(); }
                 #endregion

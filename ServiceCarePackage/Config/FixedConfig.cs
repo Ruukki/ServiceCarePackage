@@ -1,4 +1,5 @@
 using Dalamud.Game.Text;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using ServiceCarePackage.Models;
 using System;
 using System.Collections.Generic;
@@ -51,6 +52,20 @@ namespace ServiceCarePackage.Config
         internal static string CommandRegex { get { return @$"(?i)^(?:{CommandName},)\s(?:(\w+)$)"; } }
 
         internal static string CommandRegexFull { get { return $@"(?i)^(?:{CommandName},)\s+(?:\((.+)\))"; } }
+
+        internal static ulong TotalGil { get; set; } = 0;
+
+        internal static ActionType[] ActionTypeWhitelist { get; } = 
+        {
+            ActionType.Mount
+        };
+        internal static uint[] ActionIdWhitelist { get; } =
+        {
+            5, //teleport
+            //6, //return
+            //7, // TP menu
+            9, //mounting
+        };
 
         public static void LoadFromConfig(CharacterConfiguration config)
         {

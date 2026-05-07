@@ -11,8 +11,10 @@ using Serilog;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services;
+using ServiceCarePackage.Services.Action;
 using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
+using ServiceCarePackage.Services.Events;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
 using ServiceCarePackage.UI;
@@ -66,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState = services.GetRequiredService<IClientState>();
         if (ClientState != null && ClientState.IsLoggedIn)
         {
-            services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
+            LoadServices();
         }
 
         ClientState?.Login += OnLogin;
@@ -92,26 +94,16 @@ public sealed class Plugin : IDalamudPlugin
     {
         log.Debug($"[TestCommands] {command} {args}");
 
-        var move = services.GetRequiredService<MoveManager>();
+        var s = services.GetRequiredService<CharacterDataService>();
 
-        if (args.IsNullOrEmpty())
-        {
-            /*new Task(() =>
-            {
-                Thread.Sleep(10000);
-                xx.IsWalkingForced = false;
-            }).Start();*/
-            //xx.DisableMovingFor(5000);
-            /*var zz = services.GetRequiredService<MessageSender>();
-            zz.SendMessage("test");*/
-            //services.GetRequiredService<CharacterDataControl>().SetOnlineStatus();
-            //var data = services.GetRequiredService<IDataManager>();
-            //var emotes = data.GetExcelSheet<Emote>();
-            //foreach (var emote in emotes)
-            //{
-            //    log.Debug($"{emote.Name.ToString()} {emote.ActionTimeline}");
-            //}
-        }
+        log.Warning($"Total: {s.GetTotalGil()} Gil: {s.GetPlayerGil()} Retainers: {string.Join(", ", s.GetRetainerGil()??Array.Empty<uint>())}");
+    }
+
+    private void LoadServices()
+    {
+        services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
+        services.GetRequiredService<GilService>();
+        services.GetRequiredService<ActionsManager>();
     }
 
     private void OnLogin()

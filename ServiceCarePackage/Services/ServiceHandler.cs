@@ -1,11 +1,14 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceCarePackage.Commands;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.ControllerEmulation;
+using ServiceCarePackage.Services.Action;
 using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
+using ServiceCarePackage.Services.Events;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
 using ServiceCarePackage.Services.Target;
@@ -27,12 +30,13 @@ namespace ServiceCarePackage.Services
                 .AddDalamud(pi)
                 .AddLogger()
                 .AddConfig(pi)
-                //.AddDataManagement()
+                .AddDataManagement()
                 .AddMovement()
                 .AddTranslator()
                 .AddChat()
                 .AddCommands()
                 .AddTargeting()
+                .AddActionControl()
                 .AddUi(pi);
             // return the built services provider in the form of a instanced service collection
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
@@ -51,15 +55,16 @@ namespace ServiceCarePackage.Services
             return services.AddSingleton<ILog, MyLog>(_ => { var pluginLog = _.GetRequiredService<IPluginLog>(); return new MyLog(pluginLog); });
         }
 
-        /*private static IServiceCollection AddDataManagement(this IServiceCollection services)
+        private static IServiceCollection AddDataManagement(this IServiceCollection services)
         {
-            return services.AddSingleton<CharacterDataControl>(_ => 
+            return services.AddSingleton<CharacterDataService>(_ => 
             { 
-                var pluginLog = _.GetRequiredService<MyLog>();
-                var gameObjects = _.GetRequiredService<IObjectTable>();
-                return new CharacterDataControl(pluginLog, gameObjects); 
+                var pluginLog = _.GetRequiredService<ILog>();
+                var clientState = _.GetRequiredService<IClientState>();
+                var configManager = _.GetRequiredService<ConfigManager>();
+                return new CharacterDataService(pluginLog, clientState, configManager); 
             });
-        }*/
+        }
 
         private static IServiceCollection AddConfig(this IServiceCollection services, IDalamudPluginInterface pi)
         {
@@ -205,6 +210,29 @@ namespace ServiceCarePackage.Services
                 var state = _.GetRequiredService<IClientState>();
                 return new TargetingManager(log, target, state);
             });
+        }
+
+        private static IServiceCollection AddActionControl(this IServiceCollection services)
+        {
+            services.AddSingleton<GilService>(_ =>
+            {
+                return new GilService(
+                    _.GetRequiredService<ILog>(),
+                    _.GetRequiredService<IFramework>(),
+                    _.GetRequiredService<CharacterDataService>()
+                    );
+            });
+
+            services.AddSingleton<ActionsManager>(_ =>
+            {
+                return new ActionsManager(
+                    _.GetRequiredService<ILog>(),
+                    _.GetRequiredService<IFramework>(),
+                    _.GetRequiredService<IGameInteropProvider>()
+                    );
+            });
+
+            return services;
         }
 
         internal static void EnableHooks()

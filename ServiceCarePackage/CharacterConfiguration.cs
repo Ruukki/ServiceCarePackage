@@ -33,6 +33,10 @@ namespace ServiceCarePackage
         public bool AllowAnyoneUsePuppetMaster { get; set; } = true;
         public bool AllowSayChatForPuppetMaster { get; set; } = true;
         public int StunDuration { get; set; } = 5000;
+
+        public bool GilActionBlockingActive { get; set; } = false;
+        public ulong RetainerGil { get; set; } = 0;
+        public ulong GilThreshhold { get; set; } = 0;
         #endregion
     }
 }
