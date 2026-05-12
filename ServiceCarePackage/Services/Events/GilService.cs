@@ -27,9 +27,6 @@ namespace ServiceCarePackage.Services.Events
 
         private void OnUpdate(IFramework framework)
         {
-            if (!FixedConfig.CharConfig.GilActionBlockingActive)
-                return;
-
             long now = Environment.TickCount64;
 
             if (now - lastRun < 60_000)
@@ -42,8 +39,17 @@ namespace ServiceCarePackage.Services.Events
 
         private async void CheckGil()
         {
-            var total = characterDataService.GetTotalGil();
-            FixedConfig.TotalGil = total;
+            try
+            {
+                var total = characterDataService.GetTotalGil();
+                FixedConfig.TotalGil = total;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.ToString());
+                FixedConfig.TotalGil = 0;
+            }
+            
         }
 
         public void Dispose()

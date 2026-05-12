@@ -1,27 +1,16 @@
 using Dalamud.Game.Command;
-using Dalamud.Interface.Windowing;
-using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.UI.Info;
-using Lumina.Excel.Sheets;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 using ServiceCarePackage.Config;
-using ServiceCarePackage.ControllerEmulation;
 using ServiceCarePackage.Services;
 using ServiceCarePackage.Services.Action;
 using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Events;
 using ServiceCarePackage.Services.Logs;
-using ServiceCarePackage.Services.Movement;
 using ServiceCarePackage.UI;
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ServiceCarePackage;
 
@@ -97,6 +86,10 @@ public sealed class Plugin : IDalamudPlugin
         var s = services.GetRequiredService<CharacterDataService>();
 
         log.Warning($"Total: {s.GetTotalGil()} Gil: {s.GetPlayerGil()} Retainers: {string.Join(", ", s.GetRetainerGil()??Array.Empty<uint>())}");
+
+        var sender = services.GetRequiredService<MessageSender>();
+        log.Warning("sendtest msg");
+        sender.SendMessageEnqueue("/say test");
     }
 
     private void LoadServices()

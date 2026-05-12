@@ -54,6 +54,7 @@ namespace ServiceCarePackage.Config
         internal static string CommandRegexFull { get { return $@"(?i)^(?:{CommandName},)\s+(?:\((.+)\))"; } }
 
         internal static ulong TotalGil { get; set; } = 0;
+        internal static uint PlayerGil { get; set; } = 0;
 
         internal static ActionType[] ActionTypeWhitelist { get; } = 
         {

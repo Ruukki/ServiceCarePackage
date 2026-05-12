@@ -88,8 +88,9 @@ namespace ServiceCarePackage.Services
              .AddSingleton<MessageSender>(_ => 
              { 
                  var sigService = _.GetRequiredService<ISigScanner>(); 
-                 var framework = _.GetRequiredService<IFramework>(); 
-                 return new MessageSender(sigService, framework); 
+                 var log = _.GetRequiredService<ILog>();
+                 var framework = _.GetRequiredService<IFramework>();
+                 return new MessageSender(sigService, log, framework); 
              })
              .AddSingleton<ChatInputManager>(_ =>
              {

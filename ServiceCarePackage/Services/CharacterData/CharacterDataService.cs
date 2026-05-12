@@ -45,7 +45,16 @@ namespace ServiceCarePackage.Services.CharacterData
 
         public uint GetPlayerGil()
         {
-            return InventoryManager.Instance()->GetGil();
+            try
+            {
+                FixedConfig.PlayerGil = InventoryManager.Instance()->GetGil();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.ToString());
+                FixedConfig.PlayerGil = 0;
+            }
+            return FixedConfig.PlayerGil;
         }
 
         public uint[] GetRetainerGil()

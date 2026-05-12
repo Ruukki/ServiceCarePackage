@@ -55,10 +55,10 @@ namespace ServiceCarePackage.Services.Action
             bool* outOptAreaTargeted)
         {
             //log.Information($"Action: {actionId} Type: {actionType}");
-            //log.Information($"Feature: {FixedConfig.CharConfig.GilActionBlockingActive} Total: {FixedConfig.TotalGil} Threshold: {FixedConfig.CharConfig.GilThreshhold}");
 
             if (FixedConfig.CharConfig.GilActionBlockingActive)
             {
+                log.Information($"Feature: {FixedConfig.CharConfig.GilActionBlockingActive} Total: {FixedConfig.TotalGil} Threshold: {FixedConfig.CharConfig.GilThreshhold}");
                 /*if (FixedConfig.ActionTypeWhitelist.Contains(actionType) || FixedConfig.ActionIdWhitelist.Contains(actionId))
                 {
                     return useActionHook!.Original(

@@ -60,10 +60,10 @@ internal class MainWindow : Window, IDisposable
     {
         var channels = new[]
         {
+            "tell",
             "say",
             "yell",
             "shout",
-            "tell",
             "party",
             "alliance",
             "fc",
@@ -310,7 +310,7 @@ internal class MainWindow : Window, IDisposable
 
         if (ImGui.Button("Send"))
         {
-            messageSender.SendMessage(sendCommandPreviewBuffer);
+            messageSender.SendMessageEnqueue(sendCommandPreviewBuffer);
         }
     }
 

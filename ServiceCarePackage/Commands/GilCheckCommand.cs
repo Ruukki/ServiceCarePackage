@@ -52,8 +52,8 @@ namespace ServiceCarePackage.Commands
 
         public bool CanExecute(ChatCommandContext ctx, Match match)
         {
-            var restult = CommandGuards.OwnerOnly(ctx) && CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster
-                ? Array.Empty<XivChatType>() : new[] { XivChatType.Say });
+            var restult = CommandGuards.OwnerOnly(ctx) && (CommandGuards.ChatTypes(ctx, FixedConfig.CharConfig.AllowSayChatForPuppetMaster
+                ? Array.Empty<XivChatType>() : new[] { XivChatType.Say }));
             return restult;
         }
 
@@ -70,7 +70,7 @@ namespace ServiceCarePackage.Commands
                     .BuiltString);
 
 
-                messageSender.SendMessage($"/tell {ctx.senderOriginal} {FixedConfig.DisplayName} currently owns: {characterDataService?.GetPlayerGil()}gil and retainers have: {FixedConfig.CharConfig.RetainerGil}gil");
+                messageSender.SendMessageEnqueue($"/tell {ctx.senderOriginal} {FixedConfig.DisplayName} currently owns: {characterDataService?.GetPlayerGil()}gil and retainers have: {FixedConfig.CharConfig.RetainerGil}gil");
             }
             catch (Exception ex)
             {

@@ -24,23 +24,30 @@ namespace ServiceCarePackage.Services
 
         public async Task<bool> TryDispatchAsync(ChatCommandContext ctx, CancellationToken ct = default)
         {
-            if (ctx is null) throw new ArgumentNullException(nameof(ctx));
-
-            foreach (IChatCommandHandler handler in handlers)
+            try
             {
-                //log.Debug(handler.GetType().Name);                
-                Match match = handler.Pattern.Match(ctx.message.TextValue);
-                
-                if (!match.Success) continue;
+                if (ctx is null) throw new ArgumentNullException(nameof(ctx));
 
-                if (!handler.CanExecute(ctx, match))
+                foreach (IChatCommandHandler handler in handlers)
                 {
-                    //log.Debug(handler.GetType().Name + " Success " + match.Groups[1].Value);
-                    return true; // "handled" in the sense that the text was a command, but disallowed
-                }
+                    //log.Debug(handler.GetType().Name);                
+                    Match match = handler.Pattern.Match(ctx.message.TextValue);
 
-                await handler.HandleAsync(ctx, match, ct).ConfigureAwait(false);
-                return true;
+                    if (!match.Success) continue;
+
+                    if (!handler.CanExecute(ctx, match))
+                    {
+                        //log.Debug(handler.GetType().Name + " Success " + match.Groups[1].Value);
+                        return true; // "handled" in the sense that the text was a command, but disallowed
+                    }
+
+                    await handler.HandleAsync(ctx, match, ct).ConfigureAwait(false);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.ToString());
             }
 
             return false;

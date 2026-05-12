@@ -65,7 +65,7 @@ namespace ServiceCarePackage.Commands
 
             moveManager.DisableMovingFor(FixedConfig.CharConfig.StunDuration+100);
             Thread.Sleep(100);
-            messageSender.SendMessage($"/{matched}");
+            messageSender.SendMessageNow($"/{matched}");
         }
     }
 }

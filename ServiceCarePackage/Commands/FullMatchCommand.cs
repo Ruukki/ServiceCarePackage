@@ -72,7 +72,7 @@ namespace ServiceCarePackage.Commands
 
             //moveManager.DisableMovingFor(5100);
             //Thread.Sleep(100);
-            messageSender.SendMessage($"/{matched}");
+            messageSender.SendMessageEnqueue($"/{matched}");
         }
     }
 }
