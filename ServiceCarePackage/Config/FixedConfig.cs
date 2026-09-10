@@ -68,6 +68,8 @@ namespace ServiceCarePackage.Config
             9, //mounting
         };
 
+        internal static bool BypassPluginStateCheck { get; set; } = false;
+
         public static void LoadFromConfig(CharacterConfiguration config)
         {
             if (config != null)

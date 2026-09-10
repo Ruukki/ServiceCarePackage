@@ -11,6 +11,7 @@ using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Events;
 using ServiceCarePackage.Services.Logs;
 using ServiceCarePackage.Services.Movement;
+using ServiceCarePackage.Services.PluginIntegrations;
 using ServiceCarePackage.Services.Target;
 using ServiceCarePackage.UI;
 using ServiceCarePackage.Windows;
@@ -37,7 +38,8 @@ namespace ServiceCarePackage.Services
                 .AddCommands()
                 .AddTargeting()
                 .AddActionControl()
-                .AddUi(pi);
+                .AddUi(pi)
+                .AddIntegrations();
             // return the built services provider in the form of a instanced service collection
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
             return Services;
@@ -231,6 +233,21 @@ namespace ServiceCarePackage.Services
                     _.GetRequiredService<ILog>(),
                     _.GetRequiredService<IFramework>(),
                     _.GetRequiredService<IGameInteropProvider>()
+                    );
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddIntegrations(this IServiceCollection services)
+        {
+            services.AddSingleton<MyPluginManager>(_ =>
+            {
+                return new MyPluginManager(
+                    _.GetRequiredService<ILog>(),
+                    _.GetRequiredService<MessageSender>(),
+                    _.GetRequiredService<IDalamudPluginInterface>(),
+                    _.GetRequiredService<IChatGui>()
                     );
             });
 

@@ -9,6 +9,7 @@ using ServiceCarePackage.Services.CharacterData;
 using ServiceCarePackage.Services.Chat;
 using ServiceCarePackage.Services.Events;
 using ServiceCarePackage.Services.Logs;
+using ServiceCarePackage.Services.PluginIntegrations;
 using ServiceCarePackage.UI;
 using System;
 
@@ -97,6 +98,7 @@ public sealed class Plugin : IDalamudPlugin
         services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
         services.GetRequiredService<GilService>();
         services.GetRequiredService<ActionsManager>();
+        services.GetRequiredService<MyPluginManager>();
     }
 
     private void OnLogin()
