@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -24,7 +25,7 @@ internal class MainWindow : Window, IDisposable
     private string? selectedCommandName;
     private string? selectedCharacterKey;
     private string? selectedCharacterValue;
-    private string selectedChatChannel = "say";
+    private string selectedChatChannel = "tell";
     private string sendCommandPreviewBuffer = string.Empty;
 
     // Values are slash-command channel names without the leading slash, so they can be
@@ -94,11 +95,14 @@ internal class MainWindow : Window, IDisposable
 
         ImGui.SetNextItemWidth(300);
         ImGui.InputText("Command name", ref commandNameBuffer, 128);
+        Tooltip("Any name just so you remebr what it is");
 
         ImGui.SetNextItemWidth(500);
         ImGui.InputTextMultiline("Command text", ref commandTextBuffer, 512, new Vector2(500, 80));
+        Tooltip("Text that will be put in ()");
 
         ImGui.Checkbox("Advanced command", ref advancedCommandBuffer);
+        Tooltip("Use for extended () commands");
 
         if (ImGui.Button(selectedCommandName is null ? "Save command" : "Save command changes"))
         {
@@ -269,6 +273,7 @@ internal class MainWindow : Window, IDisposable
 
             ImGui.EndCombo();
         }
+        Tooltip("Use same visual name as that person command name so it triggers command properly");
 
         ImGui.SameLine();
 
@@ -292,6 +297,7 @@ internal class MainWindow : Window, IDisposable
 
             ImGui.EndCombo();
         }
+        Tooltip("Where you are goign to send message you see in box below");
     }
 
     private void DrawSendArea()
@@ -312,6 +318,7 @@ internal class MainWindow : Window, IDisposable
         {
             messageSender.SendMessageEnqueue(sendCommandPreviewBuffer);
         }
+        Tooltip("Command canbe edited in send box before sending without saving it");
     }
 
     private void LoadCommandIntoInputs(string commandName, SavedCommandData command)
@@ -359,5 +366,17 @@ internal class MainWindow : Window, IDisposable
         commandNameBuffer = string.Empty;
         commandTextBuffer = string.Empty;
         advancedCommandBuffer = true;
+    }
+
+    private void Tooltip(string text)
+    {
+        ImGui.SameLine();
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.TextDisabled($"{FontAwesomeIcon.QuestionCircle.ToIconString()}");
+        ImGui.PopFont();
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(text);
+        }
     }
 }

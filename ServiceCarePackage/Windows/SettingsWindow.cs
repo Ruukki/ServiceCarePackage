@@ -127,6 +127,13 @@ internal class SettingsWindow : Window, IDisposable
                 Tooltip("Allows anyone to use basic puppetmaster commands.\n"
                                    + "If disabled only allows owner characters to use them.");
 
+                bool healSlutMode = configManager.Current.HealSlutMode;
+                if (ImGui.Checkbox("Healslut mode", ref healSlutMode))
+                {
+                    configManager.Current.HealSlutMode = healSlutMode;
+                }
+                Tooltip("Prevents most non healer actions from being used");
+
                 ImGui.EndGroup();
                 if (configManager.Current.SettingLockLevels == Enums.SettingLockLevels.Full) { ImGui.EndDisabled(); }
                 #endregion

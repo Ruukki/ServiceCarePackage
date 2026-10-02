@@ -2,10 +2,12 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Lumina.Excel.Sheets;
 using ServiceCarePackage.Config;
 using ServiceCarePackage.Services.Logs;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -18,6 +20,8 @@ namespace ServiceCarePackage.Services.Action
         private readonly ILog log;
         private readonly IFramework framework;
         private readonly IGameInteropProvider gameInteropProvider;
+        private readonly IObjectTable gameObjectsTable;
+        private HashSet<uint> healerJobs = new();
 
         private delegate bool UseActionDelegate(
             ActionManager* self,
@@ -31,11 +35,17 @@ namespace ServiceCarePackage.Services.Action
 
         private Hook<UseActionDelegate>? useActionHook { get; set; } = null!;
 
-        internal ActionsManager(ILog log, IFramework framework, IGameInteropProvider gameInteropProvider) 
+        internal ActionsManager(ILog log, IFramework framework, IGameInteropProvider gameInteropProvider, IDataManager data, IObjectTable objects) 
         {
             this.log = log;
             this.framework = framework;
             this.gameInteropProvider = gameInteropProvider;
+            gameObjectsTable = objects;
+
+            healerJobs = data.GetExcelSheet<ClassJob>()!
+                .Where(j => j.Role == 4)
+                .Select(j => j.RowId)
+                .ToHashSet();
 
             useActionHook = this.gameInteropProvider.HookFromAddress<UseActionDelegate>(
                 ActionManager.MemberFunctionPointers.UseAction,
@@ -75,6 +85,19 @@ namespace ServiceCarePackage.Services.Action
                 if (FixedConfig.TotalGil > FixedConfig.CharConfig.GilThreshhold)
                 {
                     return false;
+                }
+            }
+
+            if (actionType == ActionType.Action && actionId > 6)
+            {
+                if (FixedConfig.CharConfig.HealSlutMode)
+                {
+                    var player = gameObjectsTable.LocalPlayer;
+                    if (player is not null && !healerJobs.Contains(player.ClassJob.RowId))
+                    {
+                        // player is on a healer — your logic
+                        return false;
+                    }
                 }
             }
 

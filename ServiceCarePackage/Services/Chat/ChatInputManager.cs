@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using static FFXIVClientStructs.FFXIV.Client.Graphics.Kernel.VertexShader;
 
 namespace ServiceCarePackage.Services.Chat
 {
@@ -63,6 +64,7 @@ namespace ServiceCarePackage.Services.Chat
                 //log.Warning(message->ToString());
                 //message->SetString(translator.Translate(message->ToString()));
                 var originalMessage = message->ToString();
+                var stringToProcess = "";
 
                 if (string.IsNullOrWhiteSpace(originalMessage))
                 {
@@ -82,10 +84,10 @@ namespace ServiceCarePackage.Services.Chat
                         // Match any other outgoing tell to preserve target name
                         var tellRegex = @"(?<=^|\s)/t(?:ell)?\s{1}(?:(\S+\s?\S+)@(\S+)|\<r\>)\s?(?=\S|\s|$)";
                         var regexMatch = Regex.Match(originalMessage, tellRegex);
-                        prefix = regexMatch.Value;
+                        prefix = regexMatch.Value.TrimEnd();
                         tellName = regexMatch.Groups[1].Value;
                         tellWorld += regexMatch.Groups[2].Value;
-                    }
+                    } 
 
                     //Restore swapped alias names
                     var recoveredName = string.Empty;
@@ -95,30 +97,53 @@ namespace ServiceCarePackage.Services.Chat
                     {
                         prefix = prefix.Replace($"{tellName}@{tellWorld}", recoveredName);
                     }
+
+                    // load any command to prefix
+                    if (string.IsNullOrEmpty(prefix))
+                    {
+                        var match = Regex.Match(originalMessage, @"^/\S+");
+
+                        prefix = match.Success ? match.Value : "";
+                    }
                 }
 
                 log.Debug($"Detouring Message: {originalMessage}");
-                
-                var stringToProcess = originalMessage.Substring(prefix.Length);
 
-                string? output;
+                stringToProcess = originalMessage.Substring(prefix.Length).TrimStart();
+
+                log.Debug("stringToProcess: " + stringToProcess);
+
+                string? output = "";
+                string? processedString;
                 if (FixedConfig.CharConfig.EnableTranslate)
                 {
-                    output = string.IsNullOrEmpty(prefix)
-                        ? translator.Translate(stringToProcess)
-                        : prefix + " " + translator.Translate(stringToProcess);
+                    processedString = translator.Translate(stringToProcess);
                 }
                 else
                 {
-                    output = string.IsNullOrEmpty(prefix)
-                        ? stringToProcess
-                        : prefix + " " + stringToProcess;
+                    processedString = stringToProcess;
                 }
+
+                if (FixedConfig.CharConfig.CowMode)
+                {
+                    processedString = Mooify(processedString);
+                }
+
+                if (!string.IsNullOrEmpty(processedString))
+                {
+                    output = string.IsNullOrEmpty(prefix)
+                        ? processedString
+                        : prefix + " " + processedString;
+                }
+                else
+                {
+                    output = prefix;
+                }
+
+                log.Debug("Output: " + output);
 
                 if (string.IsNullOrWhiteSpace(output))
                     return; // Do not sent message.
-
-                log.Debug("Output: " + output);
 
                 // Verify its a legal width
                 if (output.Length <= 500)
@@ -174,6 +199,83 @@ namespace ServiceCarePackage.Services.Chat
             nameAtWorldKey = "";
             data = null!;
             return false;
+        }
+
+        public static string Mooify(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return input;
+
+            string[] mooWords =
+            {
+        "moo",
+        "mooo",
+        "moooo",
+        "mooooo",
+        "mmoo",
+        "mmooo",
+        "mmmoo",
+        "mrr",
+        "mrrr",
+        "mrrmoo",
+        "mrrrmoo",
+        "moomoo",
+        "moo moo",
+        "mmmooo",
+        "MOO",
+        "MOOO",
+        "Moooo",
+        "moo~",
+        "mooo~",
+        "mrr~"
+    };
+
+            string[] emotes =
+            {
+        ":3",
+        ">//<",
+        ">_<",
+        "^_^",
+        ">:3",
+        "<3",
+        "x3",
+        "~~",
+        "~"
+    };
+
+            var random = Random.Shared;
+            var result = new System.Text.StringBuilder();
+
+            while (result.Length < input.Length)
+            {
+                if (result.Length > 0)
+                    result.Append(' ');
+
+                // Mostly moo. Very occasional emote.
+                if (random.NextDouble() < 0.93)
+                {
+                    result.Append(mooWords[random.Next(mooWords.Length)]);
+                }
+                else
+                {
+                    result.Append(emotes[random.Next(emotes.Length)]);
+                }
+            }
+
+            // If original ended like a sentence, optionally finish with an emote.
+            char last = input[^1];
+
+            if (last is '.' or '!' or '?')
+            {
+                // Remove trailing spaces.
+                while (result.Length > 0 && result[^1] == ' ')
+                    result.Length--;
+
+                result.Append(' ');
+                result.Append(emotes[random.Next(emotes.Length)]);
+            }
+
+            return result.ToString();
         }
     }
 }

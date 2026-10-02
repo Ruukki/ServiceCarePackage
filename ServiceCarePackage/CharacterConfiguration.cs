@@ -21,6 +21,7 @@ namespace ServiceCarePackage
         public bool EnablePuppetMasterHadcore { get; set; } = true;
         public bool EnableForcedWalk { get; set; } = true;
         public bool EnableAliasNameChanger { get; set; } = true;
+        public bool HealSlutMode { get; set; } = false;
         #endregion
 
         #region Feature data
@@ -37,6 +38,8 @@ namespace ServiceCarePackage
         public bool GilActionBlockingActive { get; set; } = false;
         public ulong RetainerGil { get; set; } = 0;
         public ulong GilThreshhold { get; set; } = 0;
+
+        public bool CowMode { get; set; } = false;
         #endregion
     }
 }

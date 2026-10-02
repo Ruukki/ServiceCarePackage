@@ -83,14 +83,18 @@ public sealed class Plugin : IDalamudPlugin
     private void OnTestCommand(string command, string args)
     {
         log.Debug($"[TestCommands] {command} {args}");
-
+        
+        FixedConfig.CharConfig.CowMode = true;
+        var x = services.GetRequiredService<MessageSender>();
+        x.SendMessageEnqueue("/tell Miki Kiki@Raiden test message");
+        /*
         var s = services.GetRequiredService<CharacterDataService>();
 
         log.Warning($"Total: {s.GetTotalGil()} Gil: {s.GetPlayerGil()} Retainers: {string.Join(", ", s.GetRetainerGil()??Array.Empty<uint>())}");
 
         var sender = services.GetRequiredService<MessageSender>();
         log.Warning("sendtest msg");
-        sender.SendMessageEnqueue("/say test");
+        sender.SendMessageEnqueue("/say test");*/
     }
 
     private void LoadServices()
@@ -98,7 +102,7 @@ public sealed class Plugin : IDalamudPlugin
         services.GetRequiredService<ConfigManager>().LoadForCurrentCharacter();
         services.GetRequiredService<GilService>();
         services.GetRequiredService<ActionsManager>();
-        services.GetRequiredService<MyPluginManager>();
+        //services.GetRequiredService<MyPluginManager>();
     }
 
     private void OnLogin()

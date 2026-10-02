@@ -232,7 +232,9 @@ namespace ServiceCarePackage.Services
                 return new ActionsManager(
                     _.GetRequiredService<ILog>(),
                     _.GetRequiredService<IFramework>(),
-                    _.GetRequiredService<IGameInteropProvider>()
+                    _.GetRequiredService<IGameInteropProvider>(),
+                    _.GetRequiredService<IDataManager>(),
+                    _.GetRequiredService<IObjectTable>()
                     );
             });
 
